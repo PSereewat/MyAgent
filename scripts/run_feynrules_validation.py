@@ -8,6 +8,7 @@ import magnus
 import argparse
 import subprocess
 import traceback
+from pathlib import Path
 from typing import Any, Dict
 from ref import feynrules_validation_template
 
