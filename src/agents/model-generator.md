@@ -89,3 +89,31 @@ Return to the main agent ONLY a concise summary:
 - Key parameter block/code info needed for `set param_card`
 - List of BSM coupling vertices (particle combinations)
 - Path to detailed summary file
+
+## NLO Model Generation (Optional)
+
+If the user specifies `nlo: True`, perform this additional step after Step 4 (UFO generation).
+If `nlo: False` or not specified, **skip entirely** and proceed with the standard LO UFO.
+
+### NLO Step: Generate NLO-capable UFO
+
+Run with the `--nlo` flag: magnus run generate-ufo -- --model <path> --lagrangian <symbol> --output <path>_NLO --nlo
+
+This instructs FeynRules to run `WriteUFO[L, NLO -> True]`, which generates UV counterterms
+and R2 rational terms in addition to the standard UFO files.
+
+**Verify NLO output** — check that the UFO directory contains:
+- `CT_vertices.py` ← UV counterterm vertices (required)
+- `R2_vertices.py` ← rational R2 terms (required)
+- `CT_couplings.py` ← counterterm couplings (required)
+
+If any of these files are missing, NLO generation failed. Report to the user that the
+model Lagrangian may require manual NLO implementation and fall back to the LO UFO.
+
+**Add to output summary**:
+- NLO status: success / failed / skipped
+- If success: confirm `CT_vertices.py` and `R2_vertices.py` and `CT_couplings.py` are present
+- If failed: explain which files are missing and recommend manual counterterm implementation
+
+After successful NLO generation, re-run the MadGraph import test (Step 5)
+on the NLO UFO directory to confirm MadGraph5 can load the NLO model correctly.
