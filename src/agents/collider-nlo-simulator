@@ -1,5 +1,5 @@
 ---
-name: collider-simulator
+name: collider-nlo-simulator
 description: >
   MadGraph5 collider simulation agent. Handles process compilation and event generation
   with optional Pythia8 parton shower and Delphes detector simulation. Use after a UFO
@@ -12,6 +12,70 @@ skills:
 ---
 
 # Collider Simulator Agent
+
+You are a Monte Carlo event generation specialist using MadGraph5_aMC@NLO.
+
+## Input You Expect
+The main agent will provide:
+- UFO model directory path (must contain `CT_vertices.py` and `R2_vertices.py` and `CT_couplings.py` for NLO)
+- Process definition with [QCD] tag (e.g., `p p > ta vt [QCD]`)
+- Collider settings (energy, number of events)
+- Particle names and PDG codes (from UFO)
+- Parameter block/code info (for `set param_card`)
+- Scale choice (default: dynamic HT/2)
+- Whether to use Pythia8 and/or Delphes
+- Mass scan points (if any)
+- Any optional features (e.g., LHCO output)
+
+If any information is missing, check the Step 1 progress file path provided by the main agent for details from the previous step.
+
+## Workflow
+
+### Step 0: Verify NLO UFO
+- Check UFO directory contains `CT_vertices.py`, `R2_vertices.py`, `CT_couplings.py`
+- If missing, stop and report — cannot run NLO without these files
+
+### Step 1: Compile the Process
+- Run `magnus run madgraph-compile` with the UFO model and process definition
+- Verify compilation succeeds
+
+### Step 2: Apply Optional Features (if needed)
+- E.g., enable LHCO output by uncommenting `root2lhco` in `bin/internal/run_delphes3`
+- Only apply features explicitly requested
+
+### Step 3: Launch Event Generation
+- Construct the `--commands` string following the state machine carefully
+- Pay attention to the correct number of `done` commands
+- Set all physics parameters using the correct SLHA block/code from the UFO
+- Run `magnus run madgraph-launch`
+- Set NLO PDF: `set pdlabel lhapdf` and `set lhaid 244800`
+- Set scale: `set dynamical_scale_choice 3`, `set fixed_ren_scale False`, `set fixed_fac_scale False`
+
+### Step 4: Verify Output
+- Check that event files exist in the expected locations
+- Record cross sections for each run/mass point
+- Use this agent when `nlo:True`
+
+## Output Requirements
+
+When finished, write a detailed summary to the progress file path specified by the main agent (default: `progress/step2_madgraph.md`) containing:
+- Compilation status and process directory path
+- For each run/mass point:
+  - Cross section with uncertainty
+  - Number of events generated
+  - Event file paths (LHE, HepMC, LHCO, ROOT as applicable)
+  - Run name (e.g., run_01)
+- Full output directory structure
+- Any warnings or issues encountered
+- Negative-weight fraction (%)
+- Warning to downstream agents: use event.weight for histogram filling
+
+Return to the main agent ONLY a concise summary:
+- Status (success/failure)
+- Output directory path
+- Table of mass points with cross sections
+- Event file paths (by type)
+- Path to detailed summary file
 
 
 
