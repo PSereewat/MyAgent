@@ -97,7 +97,7 @@ If `nlo: False` or not specified, **skip entirely** and proceed with the standar
 
 ### NLO Step: Generate NLO-capable UFO
 
-Run with the `--nlo` flag: `magnus run generate-ufo -- --model <path> --lagrangian <symbol> --output <path>_NLO --nlo`
+Run with the `--nlo` flag: `magnus run generate-ufo -- --model <path> --lagrangian <symbol> --output <path> --nlo`
 
 This instructs FeynRules to run `WriteUFO[L, NLO -> True]`, which generates UV counterterms
 and R2 rational terms in addition to the standard UFO files.
