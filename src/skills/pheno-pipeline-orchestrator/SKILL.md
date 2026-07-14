@@ -127,16 +127,19 @@ Execute the following steps **sequentially**, using the specified subagent for e
 
 ### Step 1: Model Building → `model-generator` subagent
 - Input: the Lagrangian and particle content from the user's task description
-- The subagent generates .fr model → validates → produces UFO model
+- If NLO is requested, pass `nlo: True` to the model-generator subagent
+- The subagent generates .fr model → validates → produces UFO model (NLO-capable if requested)
 - Output: `progress/<run_label>/step1_feynrules.md`
-- Extract from return: UFO path (e.g. `models/SM_HeavyN_UFO`), model file path (e.g. `models/HeavyN.fr`), particle names, PDG codes, parameter block/code info
+- Extract from return: UFO path, model file path, particle names, PDG codes, parameter block/code info
 
-### Step 2: Event Generation → `collider-simulator` subagent
+### Step 2: Event Generation → `collider-simulator` or `collider-nlo-simulator` subagent
+- If the task requests NLO (process contains `[QCD]` tag, or task specifies `nlo: True`) → use `collider-nlo-simulator`
+- Otherwise → use `collider-simulator` (LO)
 - Input: UFO path + particle info from step 1, plus collider settings from the task description
 - The subagent compiles the process and generates Monte Carlo events
 - Output: `progress/<run_label>/step2_madgraph.md`
-- Extract from return: script paths (e.g. `scripts/mg5_7TeV.mg5`), process dirs (e.g. `events/pp_muN_7TeV`), run name ↔ parameter mapping
-- **Do NOT extract physics results** (cross sections, widths, etc.) — leave that to downstream subagents who will read the output files directly
+- Extract from return: script paths, process dirs, run name ↔ parameter mapping
+- **Do NOT extract physics results** — leave that to downstream subagents
 
 ### Step 3: Event Analysis → `event-analyzer` subagent (if needed)
 - Input: event file paths from step 2, analysis specifications from the task description
