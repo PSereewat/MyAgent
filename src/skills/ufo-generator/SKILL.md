@@ -23,6 +23,8 @@ Execute the `generate-ufo` blueprint using `magnus run` (see magnus skill):
 magnus run generate-ufo -- --model path/to/model.fr --lagrangian LSnew --output path/to/MyModel_UFO
 ```
 
+| `--nlo` | No | Generate NLO-capable UFO (`WriteUFO[L, NLO -> True]`). Adds `CT_vertices.py`, `R2_vertices.py`, `CT_couplings.py` to the UFO directory. Default: LO only. |
+
 **Parameters**:
 
 | Parameter | Required | Description |
@@ -31,6 +33,7 @@ magnus run generate-ufo -- --model path/to/model.fr --lagrangian LSnew --output 
 | `--lagrangian` | Yes | Lagrangian symbol from the `.fr` file |
 | `--output` | Yes | Output path for the generated UFO directory |
 | `--restriction` | No | Path to `.rst` restriction file |
+| `--nlo` | No | Generate NLO-capable UFO (`WriteUFO[L, NLO -> True]`). Adds `CT_vertices.py`, `R2_vertices.py`, `CT_couplings.py` to the UFO directory. Default: LO only. |
 
 The `.fr` file (and `.rst` if provided) is automatically uploaded via the FileSecret mechanism. On success, the UFO directory is automatically downloaded to `--output`.
 
@@ -62,6 +65,27 @@ Check the result JSON (`magnus job result <job-id>`):
 - Any warnings about the generation process
 
 If warnings are present, review the UFO files carefully before proceeding to MadGraph5.
+
+## NLO UFO Generation
+
+When `--nlo` is passed, FeynRules runs `WriteUFO[L, NLO -> True]` instead of `WriteUFO[L]`.
+
+The generated UFO directory will contain three additional files:
+
+| File | Contents |
+|------|----------|
+| `CT_vertices.py` | UV counterterm vertices (required for NLO) |
+| `R2_vertices.py` | Rational R2 counterterm vertices (required for NLO) |
+| `CT_couplings.py` | Counterterm coupling definitions |
+
+After download, verify all three are present:
+```bash
+ls <ufo_dir>/CT_vertices.py <ufo_dir>/R2_vertices.py <ufo_dir>/CT_couplings.py
+```
+
+If any file is missing, the model Lagrangian may not support automatic NLO counterterm generation (common for complex BSM models). Fall back to LO UFO and inform the user.
+
+**SM processes always succeed with `--nlo`.** BSM models depend on whether FeynRules can derive the counterterms automatically from the Lagrangian.
 
 ## Reference Documentation
 
