@@ -1,8 +1,8 @@
-# MadGraph NLO Simulator
 ---
 name: madgraph-nlo-simulator
 description: Run MadGraph5_aMC@NLO event generation for particle physics simulations via Magnus cloud. Triggers when the user wants to generate NLO Monte Carlo events, compute next-to-leading order cross sections, or run MadGraph5 with [QCD] corrections. Supports CutTools loop reduction, LHAPDF NLO PDFs, Pythia8 MC@NLO parton shower, and Delphes detector simulation. Use when nlo:True or process contains [QCD] tag
 ---
+# MadGraph NLO Simulator
 
 ## Overview
 
