@@ -22,9 +22,6 @@ Execute the `generate-ufo` blueprint using `magnus run` (see magnus skill):
 ```bash
 magnus run generate-ufo -- --model path/to/model.fr --lagrangian LSnew --output path/to/MyModel_UFO
 ```
-
-| `--nlo` | No | Generate NLO-capable UFO (`WriteUFO[L, NLO -> True]`). Adds `CT_vertices.py`, `R2_vertices.py`, `CT_couplings.py` to the UFO directory. Default: LO only. |
-
 **Parameters**:
 
 | Parameter | Required | Description |
