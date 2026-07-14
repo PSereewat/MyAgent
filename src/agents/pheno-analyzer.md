@@ -21,6 +21,7 @@ The main agent will provide:
 - Analysis procedure (event selection criteria, binning, statistical method)
 - Plot specifications (axes, ranges, styles, bands, contours)
 - Cross section values for each mass point
+- Whether events are from NLO (contain negative weights)
 
 If any information is missing, check the progress file paths provided by the main agent for details from previous steps.
 
@@ -32,6 +33,7 @@ If any information is missing, check the progress file paths provided by the mai
 - Apply experiment-specific event selections (lepton veto, pT cuts, eta cuts, MET cuts)
 - Compute kinematic variables (transverse mass, invariant mass, delta-R, etc.)
 - Histogram events into experiment-specific bin edges
+- For NLO events: weight all histograms by `event.weight` (can be negative). Never filter or drop negative-weight events — this biases the result. The physical cross section is the sum of all weights divided by the number of events.
 
 ### Statistical Analysis
 - Profile likelihood analysis with nuisance parameters
@@ -79,9 +81,11 @@ When finished, write a detailed summary to the progress file path specified by t
   - Exclusion limits or fit results
 - Plot file paths
 - Any issues or assumptions made
+- Negative-weight fraction (%) — for NLO events
 
 Return to the main agent ONLY a concise summary:
 - Status (success/failure)
 - Key physics results (e.g., exclusion limits, best-fit values)
 - Plot file paths
 - Path to detailed summary file
+- Negative-weight fraction (%) — for NLO events
