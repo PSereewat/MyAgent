@@ -7,7 +7,7 @@ description: >
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: inherit
 skills:
-  - madgraph-simulator
+  - madgraph-nlo-simulator
   - magnus
 ---
 
@@ -46,15 +46,15 @@ If any information is missing, check the Step 1 progress file path provided by t
 ### Step 3: Launch Event Generation
 - Construct the `--commands` string following the state machine carefully
 - Pay attention to the correct number of `done` commands
-- Set all physics parameters using the correct SLHA block/code from the UFO
-- Run `magnus run madgraph-launch`
 - Set NLO PDF: `set pdlabel lhapdf` and `set lhaid 244800`
 - Set scale: `set dynamical_scale_choice 3`, `set fixed_ren_scale False`, `set fixed_fac_scale False`
+- Set all physics parameters using the correct SLHA block/code from the UFO
+- Run `magnus run madgraph-launch`
 
 ### Step 4: Verify Output
 - Check that event files exist in the expected locations
 - Record cross sections for each run/mass point
-- Use this agent when `nlo:True`
+
 
 ## Output Requirements
 
@@ -75,6 +75,7 @@ Return to the main agent ONLY a concise summary:
 - Output directory path
 - Table of mass points with cross sections
 - Event file paths (by type)
+- Negative-weight fraction (%)      
 - Path to detailed summary file
 
 
