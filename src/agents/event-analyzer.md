@@ -24,6 +24,7 @@ The main agent will provide:
 - What event selections to apply
 - Luminosity and cross section info
 - Experimental data for comparison (if any)
+- Whether events are from NLO (contain negative weights)
 
 If any information is missing, check the Step 2 progress file path provided by the main agent for details from the previous step.
 
@@ -38,6 +39,8 @@ If any information is missing, check the Step 2 progress file path provided by t
 - Define dataset types and cross sections
 - Add plot commands for requested distributions
 - Add selection cuts as specified
+- If events are from NLO, ensure histograms are weighted by `event.weight` — 
+  never fill with unit weight. Negative-weight events must not be dropped.
 - Do NOT include `submit` — it is added automatically
 
 ### Step 3: Run Analysis
@@ -52,6 +55,7 @@ If any information is missing, check the Step 2 progress file path provided by t
 
 When finished, write a detailed summary to the progress file path specified by the main agent (default: `progress/step3_madanalysis.md`) containing:
 - Analysis script(s) used
+- If NLO events: negative-weight fraction (%)
 - For each analysis run:
   - Input event file and analysis level
   - Output directory path
@@ -65,3 +69,4 @@ Return to the main agent ONLY a concise summary:
 - Key cut efficiencies or event counts after selection
 - Histogram file paths
 - Path to detailed summary file
+- If NLO events: negative-weight fraction (%)
