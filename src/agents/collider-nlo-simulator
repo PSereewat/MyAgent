@@ -1,1 +1,17 @@
+---
+name: collider-simulator
+description: >
+  MadGraph5 collider simulation agent. Handles process compilation and event generation
+  with optional Pythia8 parton shower and Delphes detector simulation. Use after a UFO
+  model is ready and the user wants to run Monte Carlo event generation. Use this agent when `nlo:True`, or the process definition contain a [QCD] tag.
+tools: Read, Write, Edit, Bash, Glob, Grep
+model: inherit
+skills:
+  - madgraph-simulator
+  - magnus
+---
+
+# Collider Simulator Agent
+
+
 
