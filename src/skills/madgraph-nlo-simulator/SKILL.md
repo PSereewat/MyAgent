@@ -20,19 +20,20 @@ All paths are **relative to the working directory**. Scripts use relative paths 
 | Output | Path pattern | Example |
 |--------|-------------|---------|
 | MG5 scripts | `scripts/mg5_<label>.mg5` | `scripts/mg5_7TeV.mg5` |
-| Process + events | `events/<process_label>/` | `events/pp_muN_7TeV/` |
-| Event files | `events/<process_label>/Events/run_XX/` | `events/pp_muN_7TeV/Events/run_01/` |
+| Process + events | `events/<process_label>/` | `events/pp_muN_7TeV_nlo/` |
+| Event files | `events/<process_label>/Events/run_XX/` | `events/pp_muN_7TeV_nlo/Events/run_01/` |
 
 **Naming conventions**:
 - `<label>`: a short, descriptive tag (typically beam energy or scan label), e.g. `7TeV`, `8TeV`, `14TeV`
-- `<process_label>`: MG5 process name + label, e.g. `pp_muN_7TeV`, `pp_ttbar`
+- `<nlo>`: a convention that tells this process is NLO QCD, e.g. `nlo`
+- `<process_label>`: MG5 process name + label + nlo, e.g. `pp_muN_7TeV_nlo`, `pp_ttbar_13TeV_nlo`
 
 When writing MG5 scripts (for local fallback), use relative paths in `output` and `launch` commands:
 ```
 import model SM_HeavyN_UFO
 generate p p > mu- n1
-output events/pp_muN_7TeV
-launch events/pp_muN_7TeV
+output events/pp_muN_7TeV_nlo
+launch events/pp_muN_7TeV_nlo
 ```
 
 ## Workflow
@@ -43,7 +44,7 @@ launch events/pp_muN_7TeV
 magnus run madgraph-compile -- \
   --ufo path/to/MyModel_UFO \
   --process "p p > t t~ [QCD]" \
-  --output path/to/pp_ttbar \
+  --output path/to/pp_ttbar_nlo \
   --definitions "l+ = e+ mu+
 l- = e- mu-
 vl = ve vm
@@ -74,9 +75,9 @@ The UFO directory (if provided) is uploaded via FileSecret. When using `--model`
 
 **WARNING**: If `--output` points to an existing directory, it will be **deleted and replaced** by the download.
 
-**Downloaded directory structure** (example: `--output simulation/pp_ttbar`):
+**Downloaded directory structure** (example: `--output simulation/pp_ttbar_nlo`):
 ```
-simulation/pp_ttbar/
+simulation/pp_ttbar_nlo/
 ├── Cards/
 │   ├── param_card.dat
 │   ├── run_card.dat
@@ -103,11 +104,11 @@ Apply these **after** compile and **before** launch, only when the user explicit
 
 ```bash
 magnus run madgraph-launch -- \
-  --process path/to/pp_ttbar \
+  --process path/to/pp_ttbar_nlo \
   --commands "done
 set nevents 1000
-set ebeam1 7000
-set ebeam2 7000
+set ebeam1 6500
+set ebeam2 6500
 set pdlabel lhapdf
 set lhaid 244800
 set dynamical_scale_choice 3
@@ -115,7 +116,7 @@ set fixed_ren_scale False
 set fixed_fac_scale False
 set req_acc_FO -1
 done" \
-  --output path/to/pp_ttbar
+  --output path/to/pp_ttbar_nlo
 ```
 
 **Parameters**:
@@ -131,9 +132,9 @@ The process directory is uploaded via FileSecret. On success, the full output di
 
 **WARNING**: If `--output` points to an existing directory (e.g. the same path used for compile), it will be **deleted and replaced** by the download. The downloaded directory includes the compiled process plus the generated events.
 
-**Downloaded directory structure** (example: `--output simulation/pp_ttbar`):
+**Downloaded directory structure** (example: `--output simulation/pp_ttbar_nlo`):
 ```
-simulation/pp_ttbar/
+simulation/pp_ttbar_nlo/
 ├── Cards/
 ├── Events/
 │   └── run_01/
@@ -202,8 +203,8 @@ There are only two states, so there must be exactly two `done` lines: one to lea
 ```
 done
 set nevents 1000
-set ebeam1 7000
-set ebeam2 7000
+set ebeam1 6500
+set ebeam2 6500
 set pdlabel lhapdf
 set lhaid 244800
 set dynamical_scale_choice 3
@@ -235,15 +236,15 @@ Prompts run against the pre-2026-04 version of this skill silently produced `nev
 magnus run madgraph-compile -- \
   --ufo path/to/UFO \
   --process "p p > t t~ [QCD]" \
-  --output simulation/pp_ttbar
+  --output simulation/pp_ttbar_nlo
 
 # Launch
 magnus run madgraph-launch -- \
-  --process simulation/pp_ttbar \
+  --process simulation/pp_ttbar_nlo \
   --commands "done
 set nevents 1000
-set ebeam1 7000
-set ebeam2 7000
+set ebeam1 6500
+set ebeam2 6500
 set pdlabel lhapdf
 set lhaid 244800
 set dynamical_scale_choice 3
@@ -251,22 +252,22 @@ set fixed_ren_scale False
 set fixed_fac_scale False
 set req_acc_FO -1
 done" \
-  --output simulation/pp_ttbar
+  --output simulation/pp_ttbar_nlo
 ```
 
-Output events: `simulation/pp_ttbar/Events/run_01/unweighted_events.lhe.gz`
+Output events: `simulation/pp_ttbar_nlo/Events/run_01/unweighted_events.lhe.gz`
 
 ### With Pythia8 + Delphes (CMS detector card)
 
 ```bash
 magnus run madgraph-launch -- \
-  --process simulation/pp_ttbar \
+  --process simulation/pp_ttbar_nlo \
   --commands "shower=Pythia8
 detector=Delphes
 done
 set nevents 1000
-set ebeam1 7000
-set ebeam2 7000
+set ebeam1 6500
+set ebeam2 6500
 set pdlabel lhapdf
 set lhaid 244800
 set dynamical_scale_choice 3
@@ -277,7 +278,7 @@ set param_card MASS 6 172.76
 set param_card SMINPUTS 1 127.9
 set delphes_card cms
 done" \
-  --output simulation/pp_ttbar
+  --output simulation/pp_ttbar_nlo
 ```
 
 Output events:
@@ -292,20 +293,20 @@ magnus run madgraph-compile -- \
   --ufo path/to/ScalarModel_UFO \
   --process "p p > t h0 [QCD], t > b l+ vl, h0 > mu+ mu-
 p p > t~ h0 [QCD], t~ > b~ l- vl~, h0 > mu+ mu-" \
-  --output simulation/pp_tS \
+  --output simulation/pp_tS_nlo \
   --definitions "l+ = e+ mu+
 l- = e- mu-
 vl = ve vm
 vl~ = ve~ vm~"
 
 magnus run madgraph-launch -- \
-  --process simulation/pp_tS \
+  --process simulation/pp_tS_nlo \
   --commands "shower=Pythia8
 detector=Delphes
 done
 set nevents 100
-set ebeam1 7000
-set ebeam2 7000
+set ebeam1 6500
+set ebeam2 6500
 set pdlabel lhapdf
 set lhaid 244800
 set dynamical_scale_choice 3
@@ -319,7 +320,7 @@ set param_card MASS 50001 scan:[20,40,60,80,100,120,140,160]
 set param_card DECAY 50001 Auto
 set delphes_card cms
 done" \
-  --output simulation/pp_tS
+  --output simulation/pp_tS_nlo
 ```
 
 ### Lepton-initiated process with LUXlep PDF
@@ -329,24 +330,24 @@ done" \
 magnus run madgraph-compile -- \
   --model sm \
   --process "e+ u > e+ u" \
-  --output simulation/ep_u
+  --output simulation/ep_u_nlo
 
 # Launch with LUXlep PDF set
 magnus run madgraph-launch -- \
-  --process simulation/ep_u \
+  --process simulation/ep_u_nlo \
   --pdf LUXlep-NNPDF31_nlo_as_0118_luxqed \
   --commands "done
 set pdlabel lhapdf
 set lhaid 82400
 set nevents 1000
-set ebeam1 7000
-set ebeam2 7000
+set ebeam1 6500
+set ebeam2 6500
 set dynamical_scale_choice 3
 set fixed_ren_scale False
 set fixed_fac_scale False
 set req_acc_FO -1
 done" \
-  --output simulation/ep_u
+  --output simulation/ep_u_nlo
 ```
 
 The `--pdf` flag downloads the specified LHAPDF PDF set into the cloud container before MG5 runs. You must also set `pdlabel` and `lhaid` in `--commands` to tell MG5 to use it.
@@ -360,7 +361,7 @@ Use MadSpin when you want spin-correlated decays applied **after** the hard even
 magnus run madgraph-compile -- \
   --model sm \
   --process "p p > t t~ [QCD]" \
-  --output simulation/pp_ttbar_madspin \
+  --output simulation/pp_ttbar_madspin_nlo \
   --definitions "l+ = e+ mu+
 l- = e- mu-
 vl = ve vm
@@ -368,7 +369,7 @@ vl~ = ve~ vm~"
 
 # Launch with MadSpin + Pythia8 + Delphes
 magnus run madgraph-launch -- \
-  --process simulation/pp_ttbar_madspin \
+  --process simulation/pp_ttbar_madspin_nlo \
   --commands "shower=Pythia8
 detector=Delphes
 madspin=ON
@@ -388,7 +389,7 @@ set spinmode onshell
 decay t > b l+ vl
 decay t~ > b~ l- vl~
 done" \
-  --output simulation/pp_ttbar_madspin
+  --output simulation/pp_ttbar_madspin_nlo
 ```
 
 Output events (in addition to the usual files):
