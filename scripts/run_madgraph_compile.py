@@ -35,6 +35,7 @@ def _compile(
     ]
     if is_nlo:
         lines.append("set ninja None")
+        lines.append("set OLP MadLoop")
     lines.append(f"import model {model_ref}")
 
     if definitions.strip():
