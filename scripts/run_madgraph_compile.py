@@ -29,10 +29,13 @@ def _compile(
     nb_core = len(os.sched_getaffinity(0))
     print(f"CPU cores (sched_getaffinity): {nb_core}")
 
+    is_nlo = any("[QCD]" in p for p in processes.strip().split("\n"))
     lines = [
         f"set nb_core {nb_core}",
-        f"import model {model_ref}",
     ]
+    if is_nlo:
+        lines.append("set ninja None")
+    lines.append(f"import model {model_ref}")
 
     if definitions.strip():
         for defn in definitions.strip().split("\n"):
