@@ -184,6 +184,15 @@ def main():
                 shutil.copytree(ufo_model_name, ufo_dest)
                 print(f"Embedded UFO model into {ufo_dest}/")
 
+            # Remove broken symlinks (e.g. NLO/MadLoop's OLE_order.olc, only populated at
+            # compile/launch time) so tarfile.add()'s os.stat() doesn't crash on them.
+            for dirpath, _dirnames, filenames in os.walk(process_output_name):
+                for filename in filenames:
+                    full_path = os.path.join(dirpath, filename)
+                    if os.path.islink(full_path) and not os.path.exists(full_path):
+                        os.remove(full_path)
+                        print(f"Removed broken symlink before archiving: {full_path}")
+
             # Upload compiled process directory
             if args.target_path:
                 file_secret = magnus.custody_file(process_output_name)
