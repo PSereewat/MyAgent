@@ -199,9 +199,12 @@ def _start_run_card_sync_thread(process_dir: str, poll_interval: float = 0.05):
 
     This thread polls for the canonical file appearing anywhere under
     process_dir/{Source,SubProcesses} and copies it into every P*/
-    subdirectory that doesn't have it yet, the instant it's found — so the
-    parallel `make` workers never race against MG5's own propagation, and
-    compilation can still run at full nb_core parallelism.
+    subdirectory that doesn't have it yet, plus SubProcesses/ itself (a
+    later "collect_events" step compiles collect_events.f /
+    handling_lhe_events.f directly in SubProcesses/, not inside a P*/
+    subdir, and needs its own local copy too) — the instant it's found, so
+    the parallel `make` workers never race against MG5's own propagation,
+    and compilation can still run at full nb_core parallelism.
 
     Returns (stop_event, thread); caller must stop_event.set() and
     thread.join() once MG5 has finished.
@@ -238,13 +241,15 @@ def _start_run_card_sync_thread(process_dir: str, poll_interval: float = 0.05):
                     entries = os.listdir(subprocesses_dir)
                 except OSError:
                     entries = []
-                for entry in entries:
-                    if not entry.startswith("P"):
+                target_dirs = [subprocesses_dir] + [
+                    os.path.join(subprocesses_dir, entry)
+                    for entry in entries
+                    if entry.startswith("P") and os.path.isdir(os.path.join(subprocesses_dir, entry))
+                ]
+                for target_dir in target_dirs:
+                    target = os.path.join(target_dir, "run_card.inc")
+                    if os.path.abspath(target) == os.path.abspath(source_path):
                         continue
-                    subdir = os.path.join(subprocesses_dir, entry)
-                    if not os.path.isdir(subdir):
-                        continue
-                    target = os.path.join(subdir, "run_card.inc")
                     if os.path.isfile(target):
                         continue
                     try:
