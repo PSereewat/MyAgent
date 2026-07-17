@@ -176,8 +176,13 @@ def _launch(
 )-> Dict[str, Any]:
 
     # Build MG5 script
-    nb_core = len(os.sched_getaffinity(0))
-    print(f"CPU cores (sched_getaffinity): {nb_core}")
+    # Cap at 10: os.sched_getaffinity(0) can report the host's full core count
+    # (e.g. 192) even though the container is only allocated cpu_count=10 in the
+    # madgraph-launch blueprint, and over-parallelizing the per-subprocess Fortran
+    # compilation causes file-handle races (e.g. "Can't open included file
+    # './run_card.inc'").
+    nb_core = min(len(os.sched_getaffinity(0)), 10)
+    print(f"CPU cores (sched_getaffinity, capped): {nb_core}")
 
     if interactive:
         script = f"set nb_core {nb_core}\nlaunch -i {process_dir}\n{launch_commands}\n"

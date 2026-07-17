@@ -26,8 +26,12 @@ def _compile(
     global process_output_name
 
     # Build MG5 script
-    nb_core = len(os.sched_getaffinity(0))
-    print(f"CPU cores (sched_getaffinity): {nb_core}")
+    # Cap at 10 to match the container's declared cpu_count=10 (madgraph-compile
+    # blueprint); os.sched_getaffinity(0) can otherwise report the host's full
+    # core count and over-parallelize subprocess compilation (see the analogous
+    # fix in run_madgraph_launch.py for the race condition this causes).
+    nb_core = min(len(os.sched_getaffinity(0)), 10)
+    print(f"CPU cores (sched_getaffinity, capped): {nb_core}")
 
     is_nlo = any("[QCD]" in p for p in processes.strip().split("\n"))
     lines = [
