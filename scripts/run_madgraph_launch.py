@@ -169,6 +169,38 @@ def _parse_results_summary(stdout: str)-> Dict[str, Any]:
     if nev_match:
         summary["nevents"] = int(nev_match.group(1))
 
+    # NLO (aMC@NLO) uses a different summary format than plain LO madevent, e.g.:
+    #    Summary:
+    #    Process p p > t t~ [QCD]
+    #    Run at p-p collider (6500.0 + 6500.0 GeV)
+    #    Number of events generated: 100
+    #    Total cross section: 7.000e+02 +- 4.2e+00 pb
+    # Without this, a successful NLO run was misreported as failed (no
+    # "cross_section" key found by the LO-only patterns above).
+    if "cross_section" not in summary:
+        nlo_xs_match = re.search(
+            r"Total cross section:\s*([\d.eE+-]+)\s*\+-\s*([\d.eE+-]+)\s*(\w+)",
+            stdout,
+        )
+        if nlo_xs_match:
+            summary["cross_section"] = (
+                f"{nlo_xs_match.group(1)} +- {nlo_xs_match.group(2)} {nlo_xs_match.group(3)}"
+            )
+
+        nlo_nev_match = re.search(
+            r"Number of events generated:\s*(\d+)",
+            stdout,
+        )
+        if nlo_nev_match:
+            summary["nevents"] = int(nlo_nev_match.group(1))
+
+        nlo_run_match = re.search(
+            r"Events/(run_\w+)/[\w.]*\.lhe\.gz file has been generated",
+            stdout,
+        )
+        if nlo_run_match:
+            summary["run_name"] = nlo_run_match.group(1)
+
     return summary
 
 
