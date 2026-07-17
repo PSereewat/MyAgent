@@ -3,12 +3,12 @@
 # THIS IS NOT DEAD CODE.
 import os
 import re
+import time
 import json
-import stat
 import shutil
-import tempfile
 import magnus
 import argparse
+import threading
 import subprocess
 import traceback
 from typing import Any, Dict
@@ -172,40 +172,94 @@ def _parse_results_summary(stdout: str)-> Dict[str, Any]:
     return summary
 
 
-def _make_delayed_make_wrapper(delay_seconds: int = 30) -> str:
-    """Create a `make` shim that sleeps before delegating to the real `make`.
+def _is_nlo_process_dir(process_dir: str) -> bool:
+    """Detect an aMC@NLO (vs. plain LO madevent) compiled process directory.
 
-    MG5's internal orchestration synchronizes the freshly-regenerated
-    './run_card.inc' into each NLO subprocess directory (P0_*) via its own
-    Python code, not via a make dependency rule, then spawns parallel `make`
-    processes to compile those directories. When compilation starts before
-    that sync finishes, `make` fails with "Can't open included file
-    './run_card.inc'" (observed even at nb_core=10 with only 3 subprocess
-    dirs, i.e. not simply a function of over-parallelization). Delaying the
-    real `make` invocation gives the fast (sub-second) sync step time to
-    finish first, while still letting the actual compilation run at full
-    parallelism (nb_core cores) once it starts.
-
-    Returns the directory to prepend to PATH so this shim shadows the real
-    `make`.
+    `amcatnlo.tar.gz` is only produced for NLO ([QCD]-tagged) processes;
+    plain LO output has no equivalent archive. This is more reliable than
+    inspecting launch_commands (the --commands param-setting string), which
+    never carries the process definition/[QCD] tag — that's only known at
+    compile time, not launch time.
     """
-    real_make = shutil.which("make")
-    if real_make is None:
-        raise RuntimeError("Could not locate the real `make` binary on PATH.")
+    return os.path.isfile(os.path.join(process_dir, "amcatnlo.tar.gz"))
 
-    wrapper_dir = tempfile.mkdtemp(prefix="delayed-make-")
-    wrapper_path = os.path.join(wrapper_dir, "make")
-    with open(wrapper_path, "w") as file_pointer:
-        file_pointer.write(
-            "#!/bin/sh\n"
-            'echo "[delayed-make] invoked: cwd=$(pwd) args=$@ epoch=$(date +%s)"\n'
-            'ls -la run_card.inc 2>&1 | sed "s/^/[delayed-make] before-sleep: /"\n'
-            f"sleep {delay_seconds}\n"
-            'ls -la run_card.inc 2>&1 | sed "s/^/[delayed-make] after-sleep: /"\n'
-            f'exec "{real_make}" "$@"\n'
-        )
-    os.chmod(wrapper_path, os.stat(wrapper_path).st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
-    return wrapper_dir
+
+def _start_run_card_sync_thread(process_dir: str, poll_interval: float = 0.05):
+    """Background thread that races MG5's own internal propagation of
+    './run_card.inc' into each NLO subprocess directory (P0_*, P1_*, ...).
+
+    MG5 regenerates a canonical run_card.inc from Cards/run_card.dat (via
+    Source/makefile's `run_card.inc: ../Cards/run_card.dat` rule) and must
+    get a copy into every SubProcesses/P*/ directory before that directory's
+    own parallel `make` tries to `include './run_card.inc'` while compiling
+    handling_lhe_events.f. This propagation is not reliably synchronized
+    before parallel compilation starts, causing "Can't open included file
+    './run_card.inc'" (observed even at nb_core=10 with only 3 subprocess
+    directories — not simply a function of over-parallelization).
+
+    This thread polls for the canonical file appearing anywhere under
+    process_dir/{Source,SubProcesses} and copies it into every P*/
+    subdirectory that doesn't have it yet, the instant it's found — so the
+    parallel `make` workers never race against MG5's own propagation, and
+    compilation can still run at full nb_core parallelism.
+
+    Returns (stop_event, thread); caller must stop_event.set() and
+    thread.join() once MG5 has finished.
+    """
+    stop_event = threading.Event()
+    subprocesses_dir = os.path.join(process_dir, "SubProcesses")
+    fixed_candidates = [
+        os.path.join(process_dir, "Source", "run_card.inc"),
+        os.path.join(subprocesses_dir, "run_card.inc"),
+    ]
+
+    def _worker():
+        source_path = None
+        synced = set()
+        while not stop_event.is_set():
+            if source_path is None:
+                for candidate in fixed_candidates:
+                    if os.path.isfile(candidate):
+                        source_path = candidate
+                        break
+                if source_path is None and os.path.isdir(subprocesses_dir):
+                    try:
+                        for entry in os.listdir(subprocesses_dir):
+                            if entry.startswith("P"):
+                                candidate = os.path.join(subprocesses_dir, entry, "run_card.inc")
+                                if os.path.isfile(candidate):
+                                    source_path = candidate
+                                    break
+                    except OSError:
+                        pass
+
+            if source_path is not None and os.path.isdir(subprocesses_dir):
+                try:
+                    entries = os.listdir(subprocesses_dir)
+                except OSError:
+                    entries = []
+                for entry in entries:
+                    if not entry.startswith("P"):
+                        continue
+                    subdir = os.path.join(subprocesses_dir, entry)
+                    if not os.path.isdir(subdir):
+                        continue
+                    target = os.path.join(subdir, "run_card.inc")
+                    if os.path.isfile(target):
+                        continue
+                    try:
+                        shutil.copy(source_path, target)
+                    except OSError:
+                        continue  # source/target transiently unavailable; retry next poll
+                    if target not in synced:
+                        print(f"[run_card.inc sync] copied {source_path} -> {target}")
+                        synced.add(target)
+
+            time.sleep(poll_interval)
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+    return stop_event, thread
 
 
 def _launch(
@@ -214,19 +268,19 @@ def _launch(
     interactive: bool = False,
 )-> Dict[str, Any]:
 
-    # Build MG5 script
-    # Cap at 10 to match the container's declared cpu_count=10 (madgraph-launch
-    # blueprint); os.sched_getaffinity(0) can otherwise report the host's full
-    # core count and over-parallelize subprocess compilation.
-    nb_core = min(len(os.sched_getaffinity(0)), 10)
-    print(f"CPU cores (sched_getaffinity, capped): {nb_core}")
+    # Build MG5 script — use all available cores (no cap). The './run_card.inc'
+    # race turned out not to be a function of core count or timing at all
+    # (confirmed via instrumented diagnostics: the file was missing both
+    # before and after a 30s delay in a failing subprocess directory) — it's
+    # a genuinely missing propagation step in MG5's own orchestration. See
+    # _start_run_card_sync_thread, which fixes this directly instead.
+    nb_core = len(os.sched_getaffinity(0))
+    print(f"CPU cores (sched_getaffinity, full): {nb_core}")
 
-    # Shadow `make` with a delayed wrapper (see _make_delayed_make_wrapper) to
-    # avoid the './run_card.inc' race while keeping full nb_core parallelism.
-    delayed_make_dir = _make_delayed_make_wrapper(delay_seconds=30)
-    env = os.environ.copy()
-    env["PATH"] = delayed_make_dir + os.pathsep + env.get("PATH", "")
-    print(f"Delayed make wrapper active (30s pre-compile delay): {delayed_make_dir}/make")
+    stop_event = sync_thread = None
+    if _is_nlo_process_dir(process_dir):
+        stop_event, sync_thread = _start_run_card_sync_thread(process_dir)
+        print("Started background run_card.inc sync thread (NLO process detected).")
 
     if interactive:
         script = f"set nb_core {nb_core}\nlaunch -i {process_dir}\n{launch_commands}\n"
@@ -241,13 +295,17 @@ def _launch(
     print(script, end="")
     print("====================================================")
 
-    process_result = subprocess.run(
-        [mg5_executable, script_filename],
-        capture_output = True,
-        text = True,
-        stdin = subprocess.DEVNULL,
-        env = env,
-    )
+    try:
+        process_result = subprocess.run(
+            [mg5_executable, script_filename],
+            capture_output = True,
+            text = True,
+            stdin = subprocess.DEVNULL,
+        )
+    finally:
+        if stop_event is not None:
+            stop_event.set()
+            sync_thread.join(timeout=5)
 
     stdout_content = process_result.stdout
     stderr_content = process_result.stderr
