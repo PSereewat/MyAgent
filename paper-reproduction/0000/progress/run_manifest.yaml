@@ -1,0 +1,60 @@
+- label: ttbar_13tev_lo_nlo
+  timestamp: "2026-07-15T16:10:00Z"
+  task: "pp -> ttbar at 13 TeV, LO and NLO QCD, Delta_phi(t,tbar) distribution comparison"
+  steps:
+    step2_lo:
+      agent: collider-simulator
+      status: complete
+      progress_file: progress/ttbar_13tev_lo_nlo/step2_lo_madgraph.md
+      output_dir: events/pp_ttbar_lo_13tev
+      lhe_file: events/pp_ttbar_lo_13tev/Events/run_01/unweighted_events.lhe.gz
+      cross_section_pb: "522.309 +- 4.897"
+      negative_weight_fraction: 0.0
+    step2_nlo:
+      agent: collider-nlo-simulator
+      status: complete
+      progress_file: progress/ttbar_13tev_lo_nlo/step2_nlo_madgraph.md
+      output_dir: events/pp_ttbar_nlo_13tev
+      lhe_file: events/pp_ttbar_nlo_13tev/Events/run_11/events.lhe.gz
+      cross_section_pb: "699.9608 +- 4.237205"
+      negative_weight_fraction: 0.15
+      job_id: 74e2475509b630d1
+      note: >
+        RESOLVED 2026-07-17 (session 4). Fixed via three infra changes to
+        scripts/run_madgraph_launch.py: (1) commit ee1e402 (nb_core=1, superseded --
+        worked but made the whole run impractically slow by serializing everything,
+        not just the compile step), (2) commits 88cbf4c/7ed4176 (delayed-make wrapper,
+        did NOT fix it -- instrumented diagnostics proved run_card.inc was genuinely
+        missing in the failing subprocess dir both before and after a 30s delay, ruling
+        out a simple timing race), (3) commits d2f252c/6baf787 (THE FIX: a background
+        daemon thread that actively syncs run_card.inc into every SubProcesses/P*/
+        directory, plus SubProcesses/ itself, the instant the canonical file appears --
+        closing a genuinely missing propagation step in MG5's own orchestration, not a
+        race resolvable by waiting). A separate result-parsing bug (commit 960468a) was
+        also found and fixed: _parse_results_summary only recognized the LO madevent
+        summary format, so this successful NLO run was initially misreported as failed.
+        See progress file for the full root-cause history (12 launch attempts total
+        before success).
+    step4_analysis:
+      agent: pheno-analyzer
+      status: complete
+      progress_file: progress/ttbar_13tev_lo_nlo/step4_analysis.md
+      script: scripts/analyze_dphi_ttbar.py
+      data:
+        - output/data/dphi_ttbar_LO.csv
+        - output/data/dphi_ttbar_LO.json
+        - output/data/dphi_ttbar_NLO.csv
+        - output/data/dphi_ttbar_NLO.json
+      figures:
+        - output/figures/dphi_ttbar_lo_nlo.png
+        - output/figures/dphi_ttbar_lo_nlo.pdf
+      note: >
+        Final combined LO+NLO Delta_phi_ttbar distribution. LO: histogram integral
+        reproduces the generator-reported cross section (522.309 pb) exactly; delta-
+        function-like spike at Delta_phi = pi (exact 2->2 back-to-back kinematics at
+        fixed order). NLO: normalized weight sum (804.99 pb) differs from the quoted
+        XSECUP (699.96 pb) by an amount consistent with expected small-N (100 event)
+        binomial sampling noise on the realized negative-weight fraction (15% realized
+        vs ~19.6% expected) -- not a bug, see step4_analysis.md. NLO distribution shows
+        the expected physical smearing away from Delta_phi = pi due to real-emission
+        recoil, while the dominant peak remains near pi.

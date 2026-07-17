@@ -1,0 +1,23 @@
+# mg5_ttbar_13TeV_lo.mg5
+# LO QCD ttbar production at 13 TeV, pp -> t t~ (no [QCD] NLO tag)
+# Executed remotely via Magnus blueprints (madgraph-compile + madgraph-launch);
+# this file records the equivalent standalone MG5 command sequence for
+# reproducibility.
+
+import model sm
+generate p p > t t~
+output events/pp_ttbar_lo_13tev
+
+launch events/pp_ttbar_lo_13tev
+done
+set nevents 100
+set ebeam1 6500
+set ebeam2 6500
+set pdlabel lhapdf
+set lhaid 247000
+set dynamical_scale_choice 3
+set fixed_ren_scale False
+set fixed_fac_scale False
+set param_card MASS 6 172.5
+set param_card DECAY 6 Auto
+done
