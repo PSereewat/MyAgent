@@ -198,7 +198,10 @@ def _make_delayed_make_wrapper(delay_seconds: int = 30) -> str:
     with open(wrapper_path, "w") as file_pointer:
         file_pointer.write(
             "#!/bin/sh\n"
+            'echo "[delayed-make] invoked: cwd=$(pwd) args=$@ epoch=$(date +%s)"\n'
+            'ls -la run_card.inc 2>&1 | sed "s/^/[delayed-make] before-sleep: /"\n'
             f"sleep {delay_seconds}\n"
+            'ls -la run_card.inc 2>&1 | sed "s/^/[delayed-make] after-sleep: /"\n'
             f'exec "{real_make}" "$@"\n'
         )
     os.chmod(wrapper_path, os.stat(wrapper_path).st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
