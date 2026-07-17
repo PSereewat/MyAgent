@@ -1,8 +1,8 @@
 {
-  "lhe_path": "events/pp_ttbar_lo_13tev/Events/run_01/unweighted_events.lhe.gz",
-  "n_events": 100,
-  "sum_raw_weight": 52230.900000000016,
-  "sum_norm_weight": 522.309,
+  "lhe_path": "events/pp_ttbar_lo_13tev/Events/run_02/unweighted_events.lhe.gz",
+  "n_events": 10000,
+  "sum_raw_weight": 5199560.0,
+  "sum_norm_weight": 519.9560000000002,
   "bin_edges": [
     0.0,
     0.15707963267948966,
@@ -69,7 +69,7 @@
     0.0,
     0.0,
     0.0,
-    3325.1223668553903
+    3310.142703611583
   ],
   "error_pb_per_rad": [
     0.0,
@@ -91,6 +91,6 @@
     0.0,
     0.0,
     0.0,
-    332.51223668553905
+    33.10142703611582
   ]
 }

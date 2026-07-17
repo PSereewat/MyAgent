@@ -2,6 +2,13 @@
 
 ## Status: SUCCESS
 
+**RERUN 2026-07-17 (session 5, user request):** re-launched at `nevents=10000` (up from
+the task spec's 100) on the same compiled process directory. Job `05b4f3bb63eaf650`,
+run `run_02`, cross section 520 ± 0.6095 pb, `events/pp_ttbar_lo_13tev/Events/run_02/
+unweighted_events.lhe.gz`. Settings otherwise identical to the `run_01` run documented
+below, which remains on disk for reference. See `progress/run_manifest.yaml` and
+`step4_analysis.md` for the final combined-analysis results.
+
 ## Overview
 
 Leading-order (pure QCD, tree-level) event generation for $pp \to t\bar{t}$ at $\sqrt{s} = 13$ TeV, using

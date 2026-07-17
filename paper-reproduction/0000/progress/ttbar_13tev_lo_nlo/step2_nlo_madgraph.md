@@ -1,6 +1,28 @@
 # Step 2 (NLO): MadGraph5_aMC@NLO Event Generation — pp -> ttbar at 13 TeV (NLO QCD)
 
-## FINAL STATUS (2026-07-17, session 4): SUCCESS
+## RERUN 2026-07-17 (session 5, user request): nevents=10000
+
+Re-launched (same compiled process directory, `scripts/run_madgraph_launch.py` commit
+`073949c`) at `nevents=10000`, up from the task spec's 100. **Job `4a4bf555a2fa8b03`**,
+run `run_12`, cross section 700.0 ± 4.2 pb, negative-weight fraction 19.83%
+(1983/10000), `events/pp_ttbar_nlo_13tev/Events/run_12/events.lhe.gz`. Confirms the
+fixes below generalize past the original N=100 success — no new issues encountered.
+
+Also fixed in this session (commit `073949c`): `_parse_results_summary`'s NLO
+cross-section regex used a bare `re.search` for `"Total cross section:"`, which also
+matches earlier *intermediate* integration-step lines ("Determining/Updating the number
+of unweighted events per channel"), so this run's job result briefly misreported the
+cross section as 694.4 ± 6.7 pb (the intermediate value) instead of the correct final
+700.0 ± 4.2 pb (from the `"Summary:"` block). Fixed by anchoring the regex to start at
+`"Summary:"`. This was a result-metadata/logging bug only — it did not affect the LHE
+file itself or the physics analysis, which reads the `<init>` block directly.
+
+See `progress/run_manifest.yaml` and `step4_analysis.md` for the final combined-analysis
+results. The `run_01` / N=100 run (job `74e2475509b630d1`) remains on disk for reference.
+
+---
+
+## FINAL STATUS (2026-07-17, session 4): SUCCESS (first successful NLO run, N=100)
 
 The NLO run completed successfully. **Job `74e2475509b630d1`**, commit `6baf787`.
 
