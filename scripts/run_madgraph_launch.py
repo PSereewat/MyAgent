@@ -177,10 +177,19 @@ def _parse_results_summary(stdout: str)-> Dict[str, Any]:
     #    Total cross section: 7.000e+02 +- 4.2e+00 pb
     # Without this, a successful NLO run was misreported as failed (no
     # "cross_section" key found by the LO-only patterns above).
+    #
+    # IMPORTANT: "Total cross section:" also appears earlier in the log, for
+    # intermediate integration steps ("Determining/Updating the number of
+    # unweighted events per channel") — those must NOT be picked up here, or
+    # a stale intermediate value gets reported instead of the final one
+    # (observed: 694.4 +- 6.7 pb intermediate vs. the correct final
+    # 700.0 +- 4.2 pb, at N=10000). Anchor specifically to the "Summary:"
+    # block, which appears exactly once, right before the final result.
     if "cross_section" not in summary:
         nlo_xs_match = re.search(
-            r"Total cross section:\s*([\d.eE+-]+)\s*\+-\s*([\d.eE+-]+)\s*(\w+)",
+            r"Summary:.*?Total cross section:\s*([\d.eE+-]+)\s*\+-\s*([\d.eE+-]+)\s*(\w+)",
             stdout,
+            re.S,
         )
         if nlo_xs_match:
             summary["cross_section"] = (
