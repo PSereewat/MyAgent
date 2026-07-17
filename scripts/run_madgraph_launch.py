@@ -176,13 +176,16 @@ def _launch(
 )-> Dict[str, Any]:
 
     # Build MG5 script
-    # Cap at 10: os.sched_getaffinity(0) can report the host's full core count
-    # (e.g. 192) even though the container is only allocated cpu_count=10 in the
-    # madgraph-launch blueprint, and over-parallelizing the per-subprocess Fortran
-    # compilation causes file-handle races (e.g. "Can't open included file
-    # './run_card.inc'").
-    nb_core = min(len(os.sched_getaffinity(0)), 10)
-    print(f"CPU cores (sched_getaffinity, capped): {nb_core}")
+    # Force serial subprocess compilation (nb_core=1). Capping at the container's
+    # declared cpu_count=10 (see run_madgraph_compile.py) was not enough to avoid a
+    # race in MG5's parallel compilation of NLO subprocess directories: multiple
+    # P0_* dirs compiled concurrently can still race on the propagation of the
+    # freshly-regenerated './run_card.inc' into each dir before `make` starts
+    # there, causing "Error: Can't open included file './run_card.inc'" even at
+    # nb_core=10 with only 3 subprocess dirs. Serial compilation eliminates the
+    # race entirely; the extra time is negligible for small processes.
+    nb_core = 1
+    print(f"CPU cores (forced serial to avoid run_card.inc race): {nb_core}")
 
     if interactive:
         script = f"set nb_core {nb_core}\nlaunch -i {process_dir}\n{launch_commands}\n"
