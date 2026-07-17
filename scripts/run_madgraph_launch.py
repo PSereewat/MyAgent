@@ -4,6 +4,9 @@
 import os
 import re
 import json
+import stat
+import shutil
+import tempfile
 import magnus
 import argparse
 import subprocess
@@ -169,6 +172,39 @@ def _parse_results_summary(stdout: str)-> Dict[str, Any]:
     return summary
 
 
+def _make_delayed_make_wrapper(delay_seconds: int = 30) -> str:
+    """Create a `make` shim that sleeps before delegating to the real `make`.
+
+    MG5's internal orchestration synchronizes the freshly-regenerated
+    './run_card.inc' into each NLO subprocess directory (P0_*) via its own
+    Python code, not via a make dependency rule, then spawns parallel `make`
+    processes to compile those directories. When compilation starts before
+    that sync finishes, `make` fails with "Can't open included file
+    './run_card.inc'" (observed even at nb_core=10 with only 3 subprocess
+    dirs, i.e. not simply a function of over-parallelization). Delaying the
+    real `make` invocation gives the fast (sub-second) sync step time to
+    finish first, while still letting the actual compilation run at full
+    parallelism (nb_core cores) once it starts.
+
+    Returns the directory to prepend to PATH so this shim shadows the real
+    `make`.
+    """
+    real_make = shutil.which("make")
+    if real_make is None:
+        raise RuntimeError("Could not locate the real `make` binary on PATH.")
+
+    wrapper_dir = tempfile.mkdtemp(prefix="delayed-make-")
+    wrapper_path = os.path.join(wrapper_dir, "make")
+    with open(wrapper_path, "w") as file_pointer:
+        file_pointer.write(
+            "#!/bin/sh\n"
+            f"sleep {delay_seconds}\n"
+            f'exec "{real_make}" "$@"\n'
+        )
+    os.chmod(wrapper_path, os.stat(wrapper_path).st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    return wrapper_dir
+
+
 def _launch(
     process_dir: str,
     launch_commands: str,
@@ -176,16 +212,18 @@ def _launch(
 )-> Dict[str, Any]:
 
     # Build MG5 script
-    # Force serial subprocess compilation (nb_core=1). Capping at the container's
-    # declared cpu_count=10 (see run_madgraph_compile.py) was not enough to avoid a
-    # race in MG5's parallel compilation of NLO subprocess directories: multiple
-    # P0_* dirs compiled concurrently can still race on the propagation of the
-    # freshly-regenerated './run_card.inc' into each dir before `make` starts
-    # there, causing "Error: Can't open included file './run_card.inc'" even at
-    # nb_core=10 with only 3 subprocess dirs. Serial compilation eliminates the
-    # race entirely; the extra time is negligible for small processes.
-    nb_core = 1
-    print(f"CPU cores (forced serial to avoid run_card.inc race): {nb_core}")
+    # Cap at 10 to match the container's declared cpu_count=10 (madgraph-launch
+    # blueprint); os.sched_getaffinity(0) can otherwise report the host's full
+    # core count and over-parallelize subprocess compilation.
+    nb_core = min(len(os.sched_getaffinity(0)), 10)
+    print(f"CPU cores (sched_getaffinity, capped): {nb_core}")
+
+    # Shadow `make` with a delayed wrapper (see _make_delayed_make_wrapper) to
+    # avoid the './run_card.inc' race while keeping full nb_core parallelism.
+    delayed_make_dir = _make_delayed_make_wrapper(delay_seconds=30)
+    env = os.environ.copy()
+    env["PATH"] = delayed_make_dir + os.pathsep + env.get("PATH", "")
+    print(f"Delayed make wrapper active (30s pre-compile delay): {delayed_make_dir}/make")
 
     if interactive:
         script = f"set nb_core {nb_core}\nlaunch -i {process_dir}\n{launch_commands}\n"
@@ -205,6 +243,7 @@ def _launch(
         capture_output = True,
         text = True,
         stdin = subprocess.DEVNULL,
+        env = env,
     )
 
     stdout_content = process_result.stdout
