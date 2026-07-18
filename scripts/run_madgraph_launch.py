@@ -3,6 +3,7 @@
 # THIS IS NOT DEAD CODE.
 import os
 import re
+import glob
 import time
 import json
 import shutil
@@ -68,6 +69,50 @@ def _install_pdf_set(name: str) -> None:
             f"PDF set directory {pdf_dir} not found after extraction."
         )
     print(f"PDF set '{name}' installed successfully at {pdf_dir}")
+
+
+def _lhapdf_env() -> Dict[str, str]:
+    """Build a subprocess env so MG5's *python* LHAPDF interface loads.
+
+    MG5's Fortran-level reweighting (scale/PDF weights written into the LHE
+    <rwgt> block) works regardless, but the post-run summary step that prints
+    the scale-envelope and PDF-uncertainty lines needs the python LHAPDF
+    bindings. Without LD_LIBRARY_PATH/PYTHONPATH pointed at them, MG5 emits
+    "Failed to access python version of LHAPDF" and silently drops both
+    summary lines from run_XX/summary.txt even though the underlying weights
+    are correct and present in the LHE file.
+    """
+    env = dict(os.environ)
+
+    # Bare "lhapdf-config" is not on PATH in the collider container (confirmed:
+    # FileNotFoundError). MG5 itself resolves the absolute path internally
+    # (visible in its own log as "set lhapdf to
+    # /opt/MG5_aMC_v3_7_0/HEPTools/lhapdf6_py3/bin/lhapdf-config"), so fall back
+    # to that fixed install location alongside the bare command.
+    candidates = ["lhapdf-config", "/opt/MG5_aMC_v3_7_0/HEPTools/lhapdf6_py3/bin/lhapdf-config"]
+    libdir = ""
+    for candidate in candidates:
+        try:
+            libdir = subprocess.run(
+                [candidate, "--libdir"], capture_output=True, text=True,
+            ).stdout.strip()
+        except FileNotFoundError:
+            continue
+        if libdir:
+            break
+
+    if not libdir or not os.path.isdir(libdir):
+        return env
+
+    existing_ld = env.get("LD_LIBRARY_PATH")
+    env["LD_LIBRARY_PATH"] = libdir + (f":{existing_ld}" if existing_ld else "")
+
+    site_packages = glob.glob(os.path.join(libdir, "python*", "site-packages"))
+    if site_packages:
+        existing_py = env.get("PYTHONPATH")
+        env["PYTHONPATH"] = site_packages[0] + (f":{existing_py}" if existing_py else "")
+
+    return env
 
 
 def _check_param_card(process_dir: str) -> list:
@@ -341,12 +386,17 @@ def _launch(
     print(script, end="")
     print("====================================================")
 
+    launch_env = _lhapdf_env()
+    print(f"[diag] LD_LIBRARY_PATH={launch_env.get('LD_LIBRARY_PATH')!r}")
+    print(f"[diag] PYTHONPATH={launch_env.get('PYTHONPATH')!r}")
+
     try:
         process_result = subprocess.run(
             [mg5_executable, script_filename],
             capture_output = True,
             text = True,
             stdin = subprocess.DEVNULL,
+            env = launch_env,
         )
     finally:
         if stop_event is not None:
