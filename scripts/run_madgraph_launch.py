@@ -76,11 +76,11 @@ def _lhapdf_env() -> Dict[str, str]:
 
     MG5's Fortran-level reweighting (scale/PDF weights written into the LHE
     <rwgt> block) works regardless, but the post-run summary step that prints
-    the scale-envelope and PDF-uncertainty lines needs the python LHAPDF
-    bindings. Without LD_LIBRARY_PATH/PYTHONPATH pointed at them, MG5 emits
-    "Failed to access python version of LHAPDF" and silently drops both
-    summary lines from run_XX/summary.txt even though the underlying weights
-    are correct and present in the LHE file.
+    the PDF-uncertainty line (scale variation doesn't need this) needs the
+    python LHAPDF bindings. Without LD_LIBRARY_PATH/PYTHONPATH pointed at
+    them, MG5 emits "Failed to access python version of LHAPDF" and silently
+    drops the "PDF variation" line from run_XX/summary.txt even though the
+    underlying per-event PDF weights are correct and present in the LHE file.
     """
     env = dict(os.environ)
 
