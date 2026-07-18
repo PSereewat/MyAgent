@@ -387,8 +387,6 @@ def _launch(
     print("====================================================")
 
     launch_env = _lhapdf_env()
-    print(f"[diag] LD_LIBRARY_PATH={launch_env.get('LD_LIBRARY_PATH')!r}")
-    print(f"[diag] PYTHONPATH={launch_env.get('PYTHONPATH')!r}")
 
     try:
         process_result = subprocess.run(
