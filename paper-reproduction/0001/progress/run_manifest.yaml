@@ -1,0 +1,4 @@
+- label: ttbar_13tev_lo_nlo
+  timestamp: "2026-07-17T00:00:00Z"
+  task: "pp -> ttbar at 13 TeV, LO and NLO QCD, Delta_phi(t,tbar) distribution comparison (N=10 events)"
+  steps: {}

@@ -1,0 +1,28 @@
+# Standalone MG5 script (for reference / local reproduction).
+# LO ttbar production at 13 TeV, pure SM, parton-level, with LO systematics
+# (scale-variation) weights enabled in the LHE output.
+#
+# Equivalent to the two Magnus blueprint calls used in this pipeline:
+#   magnus run madgraph-compile -- --model sm --process "p p > t t~" \
+#       --output events/pp_ttbar_lo_13tev
+#   magnus run madgraph-launch -- --process events/pp_ttbar_lo_13tev \
+#       --commands "<see below>" --output events/pp_ttbar_lo_13tev
+
+import model sm
+generate p p > t t~
+output events/pp_ttbar_lo_13tev
+launch events/pp_ttbar_lo_13tev
+done
+set nevents 10000
+set ebeam1 6500
+set ebeam2 6500
+set param_card MASS 6 172.5
+set param_card DECAY 6 Auto
+set pdlabel lhapdf
+set lhaid 247000
+set dynamical_scale_choice 3
+set fixed_ren_scale False
+set fixed_fac_scale False
+set use_syst True
+set systematics_arguments ['--mur=0.5,1,2', '--muf=0.5,1,2']
+done

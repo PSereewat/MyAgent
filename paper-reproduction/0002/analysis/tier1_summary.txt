@@ -1,0 +1,45 @@
+==============================================================================
+Tier-1 summary: pp -> t t~ at 13 TeV, LO vs NLO QCD
+==============================================================================
+
+                                              LO                 NLO
+sigma [pb] (run summary)      520.4000 +- 0.7669  700.0000 +- 4.2000
+sigma [pb] (banner, high-prec)            520.3650                    
+sigma [pb] (avg event weight)  520.3650 +- 0.0000  693.8997 +- 9.1704
+7-pt scale envelope [%]          +30.26 / -21.73     +10.50 / -11.01
+7-pt central sigma [pb]                 520.3650            693.9055
+K-factor (run summary)                                        1.3451
+K-factor (event avg)                                          1.3335
+Negative-weight fraction                  0.000%             19.830%
+N_eff (NLO only)                                   3640.9 (of 10000)
+<wgt> entries per event                      145                  27
+
+NLO scale band narrower than LO scale band on BOTH sides: True
+
+------------------------------------------------------------------------------
+LO 7-point breakdown (sigma [pb] at each (muR,muF), sum(w_i)/N):
+  id=   4       (0.5,0.5)  sigma =   677.8365 pb
+  id=   9       (0.5,1.0)  sigma =   635.1942 pb
+  id=  19       (1.0,0.5)  sigma =   555.3892 pb
+  id=  23      (1.0,1.0)*  sigma =   520.3650 pb
+  id=  28       (1.0,2.0)  sigma =   482.8558 pb
+  id=  38       (2.0,1.0)  sigma =   438.9320 pb
+  id=  43       (2.0,2.0)  sigma =   407.2736 pb
+
+NLO 7-point breakdown (sigma [pb] at each (muR,muF), sum(w_i)/N):
+  id=1001      (1.0,1.0)*  sigma =   693.9055 pb
+  id=1002       (2.0,1.0)  sigma =   648.0144 pb
+  id=1003       (0.5,1.0)  sigma =   738.8683 pb
+  id=1004       (1.0,2.0)  sigma =   664.4172 pb
+  id=1005       (2.0,2.0)  sigma =   617.4983 pb
+  id=1007       (1.0,0.5)  sigma =   724.1485 pb
+  id=1009       (0.5,0.5)  sigma =   766.7598 pb
+------------------------------------------------------------------------------
+
+Physics sanity checks:
+  LO max |pT(ttbar)|          = 0.000e+00 GeV  (expect ~0, exact delta function)
+  LO min Delta-phi            = 3.1415926536 rad (pi = 3.1415926536)
+  NLO pT(ttbar) > 1 GeV frac  = 27.59% (nonzero tail present: True)
+  NLO Delta-phi < 3.0 frac    = 15.55% (nonzero tail below pi present: True)
+  K-factor in [1.3,1.6]?      = True  (K=1.3451)
+  Negative-weight frac != 0?  = True  (f_minus=0.19830)

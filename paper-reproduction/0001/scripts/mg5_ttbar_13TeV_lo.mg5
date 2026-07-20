@@ -1,0 +1,47 @@
+# =============================================================================
+# MadGraph5_aMC@NLO command script (documentation / standalone reproducibility)
+#
+# Process : p p > t t~   (leading order, pure QCD, tree-level)
+# Model   : sm            (MG5 built-in Standard Model, no UFO import needed)
+# Collider: pp, sqrt(s) = 13 TeV
+# Purpose : Generate a small (N=10) parton-level LHE sample for the LO leg of
+#           the LO vs NLO ttbar comparison described in ttbar_production.md.
+#
+# This file documents the exact interactive MG5 command sequence equivalent to
+# the --commands string passed to the Magnus `madgraph-launch` blueprint. It
+# can be run standalone via:
+#
+#   ./bin/mg5_aMC scripts/mg5_ttbar_13TeV_lo.mg5
+#
+# from a MadGraph5_aMC@NLO installation directory (adjust the `output` path
+# as needed).
+# =============================================================================
+
+import model sm
+generate p p > t t~
+output events/pp_ttbar_lo_13tev
+
+launch events/pp_ttbar_lo_13tev
+  # no shower, no detector simulation -- parton-level LHE output only
+  shower=OFF
+  detector=OFF
+  done
+
+  # --- run_card.dat settings ---
+  set nevents 10
+  set ebeam1 6500
+  set ebeam2 6500
+
+  # PDF set: NNPDF23_lo_as_0130_qed via LHAPDF (pre-installed lhaid 247000)
+  set pdlabel lhapdf
+  set lhaid 247000
+
+  # Dynamical renormalization/factorization scale: mu_R = mu_F = H_T/2
+  set dynamical_scale_choice 3
+  set fixed_ren_scale False
+  set fixed_fac_scale False
+
+  # --- param_card.dat settings ---
+  set param_card MASS 6 172.5
+  set param_card DECAY 6 Auto
+  done

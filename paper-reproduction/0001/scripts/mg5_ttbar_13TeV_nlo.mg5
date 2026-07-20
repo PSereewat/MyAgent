@@ -1,0 +1,49 @@
+#************************************************************
+# Standalone MadGraph5_aMC@NLO command script (documentation)
+# Process : p p > t t~ [QCD]  (NLO QCD)
+# Model   : loop_sm (MG5 built-in loop-capable Standard Model, no UFO import)
+# Collider: pp, sqrt(s) = 13 TeV
+# Purpose : Reproducibility record of the exact commands used to compile and
+#           launch this run via the Magnus cloud blueprints
+#           (madgraph-compile / madgraph-launch).
+#
+# Run standalone with:
+#   ./bin/mg5_aMC scripts/mg5_ttbar_13TeV_nlo.mg5
+#************************************************************
+
+# --- Compile step (equivalent of the madgraph-compile blueprint) ---
+set ninja None
+import model loop_sm
+generate p p > t t~ [QCD]
+output events/pp_ttbar_nlo_13tev
+
+# --- Launch step (equivalent of the madgraph-launch blueprint) ---
+launch events/pp_ttbar_nlo_13tev
+
+done
+
+# Number of unweighted events requested
+set nevents 10
+
+# Collider energy: sqrt(s) = 13 TeV
+set ebeam1 6500
+set ebeam2 6500
+
+# PDF set: NNPDF23_nlo_as_0119_qed (LHAPDF ID 244800)
+set pdlabel lhapdf
+set lhaid 244800
+
+# Dynamical scale choice: mu_R = mu_F = H_T / 2
+set dynamical_scale_choice 3
+set fixed_ren_scale False
+set fixed_fac_scale False
+
+# Fixed-order accuracy: use fixed event count instead of accuracy-based
+# generation (required for small, fixed-N NLO event samples)
+set req_acc_FO -1
+
+# Top quark mass and (auto-computed) decay width
+set param_card MASS 6 172.5
+set param_card DECAY 6 Auto
+
+done
