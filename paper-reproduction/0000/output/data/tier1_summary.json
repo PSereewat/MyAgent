@@ -1,0 +1,75 @@
+{
+  "LO": {
+    "label": "LO",
+    "n_gen": 100000,
+    "n_events_in_file": 100000,
+    "sigma_pb": 519.852,
+    "mc_error_pb": 1.6439163661938527,
+    "neff": 99999.99999999996,
+    "f_minus": 0.0,
+    "n_negative": 0,
+    "central_scale_total_pb": 519.8520000059999,
+    "scale_envelope_totals_pb": {
+      "central_1_1": 519.8520000059999,
+      "mur0.5_muf0.5": 677.0262037223001,
+      "mur0.5_muf1": 634.5330166845999,
+      "mur1_muf0.5": 554.7576812925,
+      "mur1_muf2": 482.46555368840006,
+      "mur2_muf1": 438.50786237739993,
+      "mur2_muf2": 406.95184156139993
+    },
+    "scale_envelope_deltas_pct": {
+      "central_1_1": 0.0,
+      "mur0.5_muf0.5": 30.234413585883324,
+      "mur0.5_muf1": 22.060320375275353,
+      "mur1_muf0.5": 6.714542078533361,
+      "mur1_muf2": -7.191748096990749,
+      "mur2_muf1": -15.64755692536744,
+      "mur2_muf2": -21.717750137211542
+    },
+    "scale_envelope_up_pct": 30.234413585883324,
+    "scale_envelope_down_pct": -21.717750137211542
+  },
+  "NLO": {
+    "label": "NLO",
+    "n_gen": 100000,
+    "n_events_in_file": 100000,
+    "sigma_pb": 690.3118100480001,
+    "mc_error_pb": 3.6363233200046445,
+    "neff": 36038.410240000005,
+    "f_minus": 0.19984,
+    "n_negative": 19984,
+    "central_scale_total_pb": 690.3116809999999,
+    "scale_envelope_totals_pb": {
+      "central_1_1": 690.3116809999999,
+      "mur0.5_muf0.5": 754.041797071,
+      "mur0.5_muf1": 733.2572812412,
+      "mur1_muf0.5": 715.4300781372,
+      "mur1_muf2": 665.0699375940999,
+      "mur2_muf1": 645.621755774,
+      "mur2_muf2": 618.3273511509
+    },
+    "scale_envelope_deltas_pct": {
+      "central_1_1": 0.0,
+      "mur0.5_muf0.5": 9.232078469058981,
+      "mur0.5_muf1": 6.221189851370929,
+      "mur1_muf0.5": 3.6387037665092157,
+      "mur1_muf2": -3.656571966062389,
+      "mur2_muf1": -6.473876432347363,
+      "mur2_muf2": -10.42780121362309
+    },
+    "scale_envelope_up_pct": 9.232078469058981,
+    "scale_envelope_down_pct": -10.42780121362309
+  },
+  "K_factor": 1.3279006525857362,
+  "K_factor_in_sane_range": true,
+  "LO_scale_band_width_pct": 51.95216372309487,
+  "NLO_scale_band_width_pct": 19.65987968268207,
+  "NLO_band_narrower_than_LO": true,
+  "generator_reported": {
+    "LO_sigma_pb": 519.9,
+    "LO_mc_err_pb": 0.162,
+    "NLO_sigma_pb": 697.0,
+    "NLO_mc_err_pb": 2.3
+  }
+}

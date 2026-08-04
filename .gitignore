@@ -75,3 +75,9 @@ run_*/
 .claude/
 skills-lock.json
 .agents/
+
+# Large generated MadGraph process/run directories (build artifacts, not source)
+paper-reproduction/*/run1_LO/
+paper-reproduction/*/run2_NLO/
+paper-reproduction/*/run3_NLOPS/
+paper-reproduction/*/run4_LOPS/

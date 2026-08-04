@@ -1,0 +1,28 @@
+\# MadGraph5_aMC@NLO script: pp > ttbar @ 13 TeV, NLO QCD, MC@NLO matched to Pythia8
+\# Reuses the compiled process directory from mg5_ttbar_13TeV_nlo.mg5 (same
+\# process "p p > t t~ [QCD]", same loop_sm model) -- no recompilation.
+\# Top quarks are kept stable/undecayed (no decay chain, no MadSpin); they are
+\# showered as stable colored particles dressed with QCD radiation.
+\# Reduced statistics (10,000 events) at the user's explicit request for this
+\# incremental showered run.
+
+\# (compile step reused from events/nlo/pp_ttbar_13TeV_nlo -- not repeated here)
+
+launch events/nlo/pp_ttbar_13TeV_nlo_ps10k
+shower=Pythia8
+done
+set nevents 10000
+set ebeam1 6500
+set ebeam2 6500
+set pdlabel lhapdf
+set lhaid 244800
+set dynamical_scale_choice 3
+set fixed_ren_scale False
+set fixed_fac_scale False
+set req_acc_FO -1
+set param_card MASS 6 172.5
+set reweight_scale True
+set rw_rscale 1.0, 2.0, 0.5
+set rw_fscale 1.0, 2.0, 0.5
+set store_rwgt_info True
+done

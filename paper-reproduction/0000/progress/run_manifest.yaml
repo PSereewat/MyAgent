@@ -1,73 +1,57 @@
-- label: ttbar_13tev_lo_nlo
-  timestamp: "2026-07-15T16:10:00Z"
-  task: "pp -> ttbar at 13 TeV, LO and NLO QCD, Delta_phi(t,tbar) distribution comparison"
-  steps:
-    step2_lo:
-      agent: collider-simulator
-      status: complete
-      progress_file: progress/ttbar_13tev_lo_nlo/step2_lo_madgraph.md
-      output_dir: events/pp_ttbar_lo_13tev
-      lhe_file: events/pp_ttbar_lo_13tev/Events/run_02/unweighted_events.lhe.gz
-      cross_section_pb: "520 +- 0.6095"
-      negative_weight_fraction: 0.0
-      nevents: 10000
-      note: >
-        Rerun 2026-07-17 (session 5, user request) at nevents=10000, up from the
-        task spec's nevents=100 (run_01, superseded, cross section 522.309 +- 4.897 pb,
-        preserved for reference in step2_lo_madgraph.md). Job 05b4f3bb63eaf650.
-    step2_nlo:
-      agent: collider-nlo-simulator
-      status: complete
-      progress_file: progress/ttbar_13tev_lo_nlo/step2_nlo_madgraph.md
-      output_dir: events/pp_ttbar_nlo_13tev
-      lhe_file: events/pp_ttbar_nlo_13tev/Events/run_12/events.lhe.gz
-      cross_section_pb: "700.0 +- 4.2 (generator-quoted, corrected parsing)"
-      negative_weight_fraction: 0.1983
-      job_id: 4a4bf555a2fa8b03
-      nevents: 10000
-      note: >
-        Rerun 2026-07-17 (session 5, user request) at nevents=10000, up from the
-        task spec's nevents=100 (run_11, superseded, preserved for reference in
-        step2_nlo_madgraph.md). At N=10000 the realized negative-weight fraction
-        (19.83%) closely matches the ~19.6% expected from the quoted cross section,
-        confirming the N=100 run's 15%/804.99 pb discrepancy was small-N sampling
-        noise, not a bug (see step4_analysis.md).
-
-        Also fixed in this session (commit 073949c): _parse_results_summary's NLO
-        cross-section regex used a bare re.search for "Total cross section:", which
-        also matches earlier *intermediate* integration-step lines ("Determining/
-        Updating the number of unweighted events per channel"), so it briefly
-        misreported this run's cross section as 694.4 +- 6.7 pb (the intermediate
-        value) instead of the correct final 700.0 +- 4.2 pb (from the "Summary:"
-        block). Fixed by anchoring the regex to start at "Summary:". Does not affect
-        the LHE file itself or the physics analysis (which reads <init> directly).
-
-        Prior root-cause history for getting this step working at all (12 launch
-        attempts before first success) is unchanged from session 4 -- see
-        step2_nlo_madgraph.md.
-    step4_analysis:
-      agent: pheno-analyzer
-      status: complete
-      progress_file: progress/ttbar_13tev_lo_nlo/step4_analysis.md
-      script: scripts/analyze_dphi_ttbar.py
-      data:
-        - output/data/dphi_ttbar_LO.csv
-        - output/data/dphi_ttbar_LO.json
-        - output/data/dphi_ttbar_NLO.csv
-        - output/data/dphi_ttbar_NLO.json
-      figures:
-        - output/figures/dphi_ttbar_lo_nlo.png
-        - output/figures/dphi_ttbar_lo_nlo.pdf
-      note: >
-        FINAL (session 5): regenerated at nevents=10000 for both LO and NLO (user
-        request), superseding the N=100 version. LO: histogram integral reproduces
-        the generator-reported cross section (519.956 pb) to high precision;
-        delta-function-like spike at Delta_phi = pi persists (exact 2->2 kinematics
-        at fixed order, independent of N). NLO: normalized weight sum (693.90 pb) now
-        closely matches the quoted cross section (~700 pb) -- confirming the N=100
-        run's larger discrepancy (804.99 pb) was statistical noise from having only
-        100 discrete +-weight events, not a bug. NLO distribution shows a smooth,
-        well-resolved tail populating the full [0, pi] range (all 20 bins nonzero,
-        tight error bars) with the dominant peak remaining at Delta_phi = pi, a much
-        clearer picture of the real-emission recoil smearing than the sparse N=100
-        version.
+runs:
+  - label: ttbar_13tev_lo_vs_nlo
+    timestamp: "2026-07-25T19:46:00"
+    task: "LO vs NLO QCD comparison for pp > ttbar at 13 TeV (rates, scale uncertainty, 5 differential distributions, NLO technical checks)"
+    steps:
+      step2_lo_madgraph:
+        status: success
+        process_dir: events/lo/pp_ttbar_13TeV_lo
+        lhe_file: events/lo/pp_ttbar_13TeV_lo/Events/run_01/unweighted_events.lhe.gz
+        cross_section_pb: "519.9 +- 0.162"
+        nevents: 100000
+        pdf_set: NNPDF23_lo_as_0130_qed
+        lhaid: 247000
+        progress_report: progress/ttbar_13tev_lo_vs_nlo/step2_lo_madgraph.md
+      step3_nlo_madgraph:
+        status: success
+        process_dir: events/nlo/pp_ttbar_13TeV_nlo
+        lhe_file: events/nlo/pp_ttbar_13TeV_nlo/Events/run_01/events.lhe.gz
+        cross_section_pb: "697.0 +- 2.3"
+        scale_envelope_pb: "690.4 +9.2% -10.4% (9-point envelope, dynamical_scale_choice 3)"
+        nevents: 100000
+        pdf_set: NNPDF23_nlo_as_0119_qed
+        lhaid: 244800
+        negative_weight_fraction_pct: 19.98
+        wgt_entries_per_event: 27
+        progress_report: progress/ttbar_13tev_lo_vs_nlo/step3_nlo_madgraph.md
+  - label: ttbar_13tev_lo_vs_nlo_ps10k
+    parent: ttbar_13tev_lo_vs_nlo
+    timestamp: "2026-07-25T21:30:00"
+    task: "Incremental run: reuse compiled LO/NLO process dirs, relaunch with Pythia8 shower enabled and nevents=10000 (down from 100000), to check whether NLO+PS resums the negative pT_ttbar bin near the Born boundary seen in the fixed-order comparison"
+    steps:
+      step2_lo_madgraph_ps:
+        status: success
+        process_dir: events/lo/pp_ttbar_13TeV_lo (reused, not recompiled)
+        output_dir: events/lo/pp_ttbar_13TeV_lo_ps10k
+        lhe_file: events/lo/pp_ttbar_13TeV_lo_ps10k/Events/run_02/unweighted_events.lhe.gz
+        hepmc_file: events/lo/pp_ttbar_13TeV_lo_ps10k/Events/run_02/tag_1_pythia8_events.hepmc.gz
+        cross_section_pb: "520 +- 0.6095"
+        nevents: 10000
+        pdf_set: NNPDF23_lo_as_0130_qed
+        lhaid: 247000
+        wgt_entries_per_event: 145
+        pythia8_shower: true
+        top_pdg_confirmed_post_shower: true
+        attempt_1_job: f551634611442de3 (Failed: Container UNKNOWN during execution, post-computation infra loss)
+        attempt_2_job: b78cba52bc84ed18 (Success)
+        progress_report: progress/ttbar_13tev_lo_vs_nlo_ps10k/step2_lo_madgraph_ps.md
+      step3_nlo_madgraph_ps:
+        status: blocked
+        reason: "shower=Pythia8 requested but MG5 reported the Pythia8 shower interface unavailable in this container ('Your parton-shower choice is not available for running'); fell back to noshower. No tag_1_pythia8_events.hepmc.gz produced, no MC@NLO matching occurred."
+        process_dir: events/nlo/pp_ttbar_13TeV_nlo (reused, not recompiled)
+        output_dir: events/nlo/pp_ttbar_13TeV_nlo_ps10k
+        byproduct_lhe_file: events/nlo/pp_ttbar_13TeV_nlo_ps10k/Events/run_02/events.lhe.gz
+        byproduct_cross_section_pb: "702.3 +- 4.5"
+        byproduct_nevents: 10000
+        byproduct_negative_weight_fraction_pct: 22.92
+        progress_report: progress/ttbar_13tev_lo_vs_nlo_ps10k/step3_nlo_madgraph_ps.md

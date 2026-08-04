@@ -1,5 +1,4 @@
 <!-- prettier-ignore -->
-
 <div align="center">
 
 # ⚛ Collider-Agent
@@ -10,18 +9,17 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white)](https://www.python.org)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-compatible-7c3aed)](https://claude.ai/code)
 ![Status](https://img.shields.io/badge/status-beta-orange)
+![NLO](https://img.shields.io/badge/QCD-LO%20%2B%20NLO-2ea44f)
 
-> From a LaTeX Lagrangian to a publication-ready figure — fully automated.
+> From a LaTeX Lagrangian to a publication-ready figure — at LO or NLO, fully automated.
 
-[Overview](#overview) • [Quickstart](#quickstart) • [Installation](#installation) • [Examples](#example-prompts) • [Python Agent](#python-agent) • [Citation](#citation)
+[Overview](#overview) • [NLO Support](#nlo-support) • [Quickstart](#quickstart) • [Installation](#installation) • [Examples](#example-prompts) • [Python Agent](#python-agent) • [Citation](#citation)
 
 [中文](README_zh.md)
-
 
 <img src="images/architecture.svg" alt="Architecture" width="900" />
 
 </div>
-
 
 ## Overview
 
@@ -30,24 +28,44 @@ Collider-Agent enables AI coding agents (Claude Code, Cursor, Windsurf, and more
 **Full pipeline, fully automated:**
 
 - Parse a LaTeX Lagrangian and generate a FeynRules model
-- Validate the model and produce a UFO output for MadGraph5
-- Run parton-level and showered event generation with MadGraph5 + Pythia8
-- Apply detector simulation (Delphes) and analysis cuts (MadAnalysis5)
-- Generate kinematic distributions, cutflow tables, exclusion contours in parameter space, etc.
+- Validate the model and produce a UFO output for MadGraph5 — LO by default, NLO-capable when the process requires it, with automatic fallback to LO-only if counterterm generation fails
+- Run parton-level and showered event generation at **leading order (LO)** or **next-to-leading order in QCD (NLO)** with MadGraph5_aMC@NLO + Pythia8
+- Apply detector simulation (Delphes) and weighted analysis cuts with MadAnalysis5 — correctly accounting for signed event weights on NLO samples
+- Generate kinematic distributions, cut-flow tables, exclusion contours in parameter space, and scale/PDF uncertainty envelopes
+
+> [!NOTE]
+> This is a personal working extension of the original Collider-Agent architecture described in the paper cited below. The base pipeline (model generation, LO event generation, MadAnalysis5 cut-flow, statistical post-processing) is the original authors' work; the **NLO event generation, negative-weight handling, and effective-sample-size statistics** described in this README are additions made on top of it and have not been separately published. Please cite the original paper for the underlying architecture (see [Citation](#citation)).
+
+## NLO Support
+
+Any process definition that includes a `[QCD]` tag (e.g. `p p > t t~ [QCD]`), or is explicitly marked `nlo: true`, is automatically routed to the NLO branch of the pipeline instead of the default LO branch. A few things are worth knowing if you're working with NLO output:
+
+- **Engine**: MadGraph5_aMC@NLO, using MadLoop + CutTools for the one-loop virtual corrections and MadFKS for real-emission subtraction, matched to Pythia8 via MC@NLO.
+- **Negative weights are expected, not a bug.** NLO samples typically carry a 10–30% negative-weight fraction as a normal consequence of the subtraction scheme. They are **never filtered or dropped** anywhere in this pipeline — histograms are always filled with the signed `event.weight`, and cut-flow tables are weighted accordingly.
+- **Statistics are treated correctly for signed weights.** Per-bin statistical errors use `sqrt(Σw_i²)` directly; when an effective sample size is needed, the pipeline uses the general (Kish) formula `Neff = (Σw_i)² / Σw_i²` rather than the simplified `N·(1-2·f_minus)²` shortcut, which only holds when every event shares the same weight magnitude.
+- **UFO requirement**: NLO generation requires the UFO model to include `CT_vertices.py`, `R2_vertices.py`, and `CT_couplings.py` (the FeynRules NLO counterterm output). Most public BSM UFO models are LO-only — the pipeline detects this automatically and falls back to the LO simulator.
+- **Systematics**: μ_R/μ_F scale variation and PDF uncertainty envelopes can be computed from a single run via built-in reweighting, without a separate rerun.
+- **Incremental runs**: adding statistics, changing cuts, or rerunning at a different mass point re-executes only the affected pipeline stages, tracked through a run manifest so nothing silently overwrites a previous result.
 
 ## Roadmap
 
 | Status | Feature                                                                       |
-|:------:| ----------------------------------------------------------------------------- |
+|:------:| ------------------------------------------------------------------------------ |
 | ✅      | FeynRules model generation from LaTeX Lagrangian                              |
 | ✅      | FeynRules model validation (Hermiticity, mass diagonalization, kinetic terms) |
-| ✅      | UFO model generation for MadGraph5                                            |
-| ✅      | MadGraph5 event generation with Pythia8 parton shower                         |
+| ✅      | UFO model generation for MadGraph5 (LO, with NLO counterterms when available) |
+| ✅      | MadGraph5 LO event generation with Pythia8 parton shower                      |
+| ✅      | MadGraph5_aMC@NLO NLO (QCD) event generation with CutTools loop reduction     |
+| ✅      | Automatic LO/NLO routing (`[QCD]` tag / `nlo` flag) via dedicated orchestrator |
+| ✅      | Negative-weight-aware histogram filling and cut-flow accounting               |
+| ✅      | Effective-sample-size (Neff) and negative-weight-fraction reporting for NLO   |
+| ✅      | μ_R/μ_F scale and PDF uncertainty envelopes from a single NLO run             |
 | ✅      | Delphes detector simulation                                                   |
 | ✅      | MadAnalysis5 normal mode analysis                                             |
-| ✅      | Multi-agent orchestration for full pipeline                                   |
+| ✅      | Multi-agent orchestration for full pipeline, with incremental re-run support |
 | ⬜      | MadAnalysis5 expert mode support                                              |
 | ⬜      | Fine-grained parameter tuning for Pythia and other packages                   |
+| ⬜      | Automated shower-weight variations for NLO uncertainty bands                  |
 | ⬜      | More paper reproduction examples (contributions welcome!)                     |
 
 ## Installation
@@ -55,9 +73,8 @@ Collider-Agent enables AI coding agents (Claude Code, Cursor, Windsurf, and more
 ### Prerequisites
 
 - [Claude Code](https://claude.ai/code) — recommended; provides full support for both sub-agents and skills
-  
-  > Other agents with skills support also work (skills only, no sub-agents): Cursor, Windsurf, Gemini CLI, Cline, Goose, Roo Code, and [more](#supported-agents-and-their-global-skills-paths)
 
+  > Other agents with skills support also work (skills only, no sub-agents): Cursor, Windsurf, Gemini CLI, Cline, Goose, Roo Code, and [more](#supported-agents-and-their-global-skills-paths)
 - Python 3.10+ (requires `magnus-sdk>=0.7.0`)
 
 ### Setup
@@ -123,36 +140,35 @@ A successful run prints `Hello from Magnus!` after pulling the required containe
 For **Claude Code** (full support: sub-agents + skills):
 
 ```bash
-cp -r src/agents ~/.claude/agents
-cp -r src/skills ~/.claude/skills
+cp -r mysrc/agents ~/.claude/agents
+cp -r mysrc/skills ~/.claude/skills
 ```
 
 For **other agents** (skills only):
 
 ```bash
 # Replace <skills-path> with the global skills path for your agent (see table below)
-cp -r src/skills <skills-path>
+cp -r mysrc/skills <skills-path>
 ```
 
 <a id="supported-agents-and-their-global-skills-paths"></a>
-
 **Supported agents and their global skills paths:**
 
 | Agent          | Global skills path            |
-| -------------- | ----------------------------- |
-| Claude Code    | `~/.claude/skills/`           |
-| Cursor         | `~/.cursor/skills/`           |
-| Windsurf       | `~/.codeium/windsurf/skills/` |
-| GitHub Copilot | `~/.copilot/skills/`          |
-| Gemini CLI     | `~/.gemini/skills/`           |
-| Cline / Warp   | `~/.agents/skills/`           |
-| Goose          | `~/.config/goose/skills/`     |
-| Roo Code       | `~/.roo/skills/`              |
-| OpenCode       | `~/.config/opencode/skills/`  |
-| Codex          | `~/.codex/skills/`            |
+| -------------- | ------------------------------ |
+| Claude Code    | `~/.claude/skills/`            |
+| Cursor         | `~/.cursor/skills/`            |
+| Windsurf       | `~/.codeium/windsurf/skills/`  |
+| GitHub Copilot | `~/.copilot/skills/`           |
+| Gemini CLI     | `~/.gemini/skills/`            |
+| Cline / Warp   | `~/.agents/skills/`            |
+| Goose          | `~/.config/goose/skills/`      |
+| Roo Code       | `~/.roo/skills/`               |
+| OpenCode       | `~/.config/opencode/skills/`   |
+| Codex          | `~/.codex/skills/`             |
 
 > [!TIP]
-> Project-scoped installation is also supported. Copy `src/skills/` into `.claude/skills/` (or the equivalent directory for your agent) at the root of your working directory to scope the skills to that project only.
+> Project-scoped installation is also supported. Copy `mysrc/skills/` into `.claude/skills/` (or the equivalent directory for your agent) at the root of your working directory to scope the skills to that project only.
 
 **4. Restart your agent** to load the new agents and skills.
 
@@ -164,7 +180,6 @@ cp -r src/skills <skills-path>
 The FeynRules-based blueprints (`feynrules-model-validator`, `ufo-generator`) require a Wolfram Engine license. Because the license is tied to the machine identity of the *container* rather than the host, activation must be performed inside the container itself.
 
 1. Register a free Wolfram ID at [wolfram.com/engine/free-license](https://wolfram.com/engine/free-license)
-
 2. Run the activation inside the container:
 
 ```bash
@@ -188,14 +203,21 @@ The fastest way to try Collider-Agent is to run a standard-model dilepton invari
 claude -p "Plot the dilepton invariant mass distribution for parton-level pp -> l+l- process at the 14 TeV LHC in the SM." --dangerously-bypass-permissions
 ```
 
-This runs the full pipeline non-interactively: MadGraph5 generates the events via [Magnus](https://github.com/rise-agi/magnus), and the agent produces a normalized $m_{\ell\ell}$ histogram in your working directory.
+This runs the full LO pipeline non-interactively: MadGraph5 generates the events via [Magnus](https://github.com/rise-agi/magnus), and the agent produces a normalized $m_{\ell\ell}$ histogram in your working directory.
+
+To try the NLO branch instead, simply include `[QCD]` in the requested process:
+
+```bash
+claude -p "Generate NLO QCD-corrected pp -> t t~ [QCD] events at 13 TeV with Pythia8 showering, and plot the leading jet pT distribution, correctly weighted for negative-weight events." --dangerously-bypass-permissions
+```
+
+The orchestrator detects the `[QCD]` tag, routes generation through `collider-nlo-simulator` instead of the LO simulator, and the returned analysis reports the negative-weight fraction alongside the plot.
 
 ## Usage
 
 ### Basic Workflow
 
-1. Prepare a detailed Markdown prompt (for example, `prompt.md`) describing the collider analysis you want to run, including the Lagrangian, collider process, event selection, and parameter scan strategy, much like you would write your own research note or paper draft (see `paper-reproduction/` for examples)
-
+1. Prepare a detailed Markdown prompt (for example, `prompt.md`) describing the collider analysis you want to run, including the Lagrangian, collider process (LO or NLO), event selection, and parameter scan strategy, much like you would write your own research note or paper draft (see `paper-reproduction/` for examples)
 2. Start your agent and provide the prompt:
 
 ```bash
@@ -204,31 +226,30 @@ claude -p "Execute the analysis following prompt.md"
 
 3. The system orchestrates the full pipeline:
    - Parse the Lagrangian and generate a FeynRules model
-   - Validate and generate the UFO model
-   - Run MadGraph5 simulations with Pythia8 / Delphes
-   - Apply analysis cuts with MadAnalysis5
-   - Generate the analysis outputs, such as kinematic distribution plots, parameter exclusion regions, and any other results requested in the user prompt
-
+   - Validate and generate the UFO model (LO, or NLO-capable if counterterms are requested and available)
+   - Run MadGraph5 (LO) or MadGraph5_aMC@NLO (NLO) simulations with Pythia8 / Delphes
+   - Apply weighted analysis cuts with MadAnalysis5, preserving negative-weight events for NLO samples
+   - Generate the analysis outputs, such as kinematic distribution plots, cut-flow tables, parameter exclusion regions, scale/PDF uncertainty bands, and any other results requested in the user prompt
 
 ### Standalone Tasks
 
 The agent can also be used for individual sub-tasks, without running the full collider-phenomenology pipeline. For example, you can ask it to:
 
 - translate a Lagrangian written in standard LaTeX-based physics notation into a FeynRules `.fr` model file
-- generate events for a process at the LHC based on a `UFO` model file
-- analyze Monte Carlo events with MadAnalysis to produce a kinematic distribution plot
+- generate LO or NLO events for a process at the LHC based on a `UFO` model file
+- analyze Monte Carlo events with MadAnalysis to produce a kinematic distribution plot, correctly weighted if the sample is NLO
 
 For instance, you may provide a prompt like:
 
 ```bash
 claude -p "Given the Lagrangian in prompt_lagrangian.md, generate a FeynRules .fr model and export the corresponding UFO files"
 ```
+
 Here, `prompt_lagrangian.md` contains the Lagrangian written in standard LaTeX physics notation.
 
 ### Example Prompts
 
 The `paper-reproduction/` directory contains example prompts to reproduce figures in the following papers:
-
 
 | arXiv ID | Topic | Figures |
 |----------|-------|---------|
@@ -241,28 +262,33 @@ The `paper-reproduction/` directory contains example prompts to reproduce figure
 | [2103.02708](2103.02708/) | $p p \to Z^\prime \to \ell^+ \ell^-$ at the LHC in the SSM and $E_6$ inspired $Z^\prime$ scenario| 4 |
 | [2104.05720](2104.05720/) | Searching for Leptoquarks via $\mu^+ \mu^- \to b \bar{b}$ process at Future Muon Colliders | 11, 12 |
 
+> [!TIP]
+> Any of the above can be re-run at NLO by adding `[QCD]` to the relevant process line in its prompt, provided the associated UFO model has NLO counterterms available.
 
 ## Repository Structure
 
 ```
 ColliderAgent/
-├── src/
-│   ├── agents/                        # Sub-agent definitions (Claude Code)
+├── mysrc/
+│   ├── agents/                            # Sub-agent definitions (Claude Code)
 │   │   ├── model-generator.md
-│   │   ├── collider-simulator.md
+│   │   ├── collider-simulator.md          # LO event generation
+│   │   ├── collider-nlo-simulator.md      # NLO (QCD) event generation
 │   │   ├── event-analyzer.md
-│   │   └── pheno-analyzer.md
-│   └── skills/                        # Agent skill modules (all agents)
+│   │   ├── pheno-analyzer.md
+│   │   └── pheno-pipeline-orchestrator.md # Full-pipeline orchestration, LO/NLO routing
+│   └── skills/                            # Agent skill modules (all agents)
 │       ├── feynrules-model-generator/
 │       ├── feynrules-model-validator/
 │       ├── ufo-generator/
-│       ├── madgraph-simulator/
+│       ├── madgraph-lo-simulator/
+│       ├── madgraph-nlo-simulator/
 │       ├── madanalysis-analyzer/
-│       ├── pheno-pipeline-orchestrator/
+│       ├── pheno-analyzer/                # Statistics, normalization, plotting references/templates
 │       └── magnus/
-├── python-agent/                      # Standalone ADK agent (Python API)
-├── scripts/                           # Magnus cloud blueprint scripts
-├── paper-reproduction/                # Example prompts from paper
+├── python-agent/                          # Standalone ADK agent (Python API)
+├── scripts/                               # Magnus cloud blueprint scripts
+├── paper-reproduction/                    # Example prompts from papers
 │   ├── 1308.2209/
 │   ├── 1605.02910/
 │   └── ...
@@ -275,24 +301,27 @@ ColliderAgent/
 > [!NOTE]
 > Sub-agents are currently supported by Claude Code only. Users of other agents can use the skills directly via the agent's built-in skill invocation mechanism.
 
-| Agent                | Description                                       |
-| -------------------- | ------------------------------------------------- |
-| `model-generator`    | LaTeX → FeynRules → UFO pipeline                  |
-| `collider-simulator` | MadGraph5 event generation with Pythia8 / Delphes |
-| `event-analyzer`     | MadAnalysis5 cut-flow and histogram analysis      |
-| `pheno-analyzer`     | Orchestrates the full phenomenology study         |
+| Agent                         | Description                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `model-generator`             | LaTeX → FeynRules → UFO pipeline (LO by default, NLO-capable UFO when requested)      |
+| `collider-simulator`          | MadGraph5 **LO** event generation with Pythia8 / Delphes                             |
+| `collider-nlo-simulator`      | MadGraph5_aMC@NLO **NLO (QCD)** event generation — CutTools loop reduction, MC@NLO matching, negative-weight tracking |
+| `event-analyzer`              | MadAnalysis5 cut-flow and histogram analysis; weighted-fill and negative-weight handling for NLO samples |
+| `pheno-analyzer`              | Statistical inference (profile likelihood, exclusion limits) and publication-quality plotting; effective-sample-size (Kish formula) treatment for NLO negative weights |
+| `pheno-pipeline-orchestrator` | Coordinates the end-to-end pipeline: LO/NLO routing, run labeling, incremental re-runs, progress tracking |
 
 ## Skills
 
-| Skill                         | Description                                       |
-| ----------------------------- | ------------------------------------------------- |
-| `feynrules-model-generator`   | Generate `.fr` model files from LaTeX Lagrangians |
-| `feynrules-model-validator`   | Validate `.fr` models via Mathematica checks      |
-| `ufo-generator`               | Export FeynRules models to UFO format             |
-| `madgraph-simulator`          | Run MadGraph5_aMC@NLO event generation            |
-| `madanalysis-analyzer`        | Perform cut-flow analysis and produce histograms  |
-| `pheno-pipeline-orchestrator` | Coordinate the end-to-end phenomenology pipeline  |
-| `magnus`                      | Interface with the Magnus cloud HEP platform      |
+| Skill                         | Description                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| `feynrules-model-generator`   | Generate `.fr` model files from LaTeX Lagrangians                          |
+| `feynrules-model-validator`   | Validate `.fr` models via Mathematica checks                               |
+| `ufo-generator`               | Export FeynRules models to UFO format (LO or NLO-capable)                  |
+| `madgraph-lo-simulator`       | Run MadGraph5 **leading-order** event generation                           |
+| `madgraph-nlo-simulator`      | Run MadGraph5_aMC@NLO **NLO (QCD)** event generation with negative-weight handling |
+| `madanalysis-analyzer`        | Perform cut-flow analysis and produce weighted histograms                  |
+| `pheno-analyzer`              | Statistical-likelihood construction, normalization conventions, effective-sample-size formulas, and plotting templates |
+| `magnus`                      | Interface with the Magnus cloud HEP platform                               |
 
 ## Python Agent
 
@@ -301,18 +330,19 @@ In addition to the skill-based interface, ColliderAgent ships a **standalone Pyt
 | Module | Description |
 |---|---|
 | [`python-agent/`](python-agent/) | Google ADK agent that accepts natural-language physics tasks and orchestrates the full pipeline via Python API. Includes `uv`-based setup, interactive `CLI.py`, and a full test suite. |
-| [`scripts/`](scripts/) | Entry-point scripts executed by Magnus blueprint containers. Each script corresponds to a named blueprint (`validate-feynrules`, `generate-ufo`, `madgraph-compile`, etc.) called by the agent's tools. |
+| [`scripts/`](scripts/) | Entry-point scripts executed by Magnus blueprint containers. Each script corresponds to a named blueprint (`validate-feynrules`, `generate-ufo`, `madgraph-compile`, `madgraph-launch`, etc.) called by the agent's tools. |
 
 > [!NOTE]
 > If you only want to use Collider-Agent through Claude Code (or another AI agent), you don't need these directories. They are intended for programmatic access, custom integrations, and pipeline development.
 
 See the individual READMEs for installation and usage details:
+
 - [python-agent/README.md](python-agent/README.md)
 - [scripts/README.md](scripts/README.md)
 
 ## Citation
 
-If you use Collider-Agent in your research, please cite:
+If you use Collider-Agent in your research, please cite the original architecture paper:
 
 ```bibtex
 @article{Qiu:2026iby,
@@ -328,7 +358,10 @@ If you use Collider-Agent in your research, please cite:
 }
 ```
 
-Please also cite the HEP tools used in your analysis, including [FeynRules](https://arxiv.org/abs/1310.1921), [MadGraph5_aMC@NLO](https://github.com/restrepo/madgraph), [Pythia8](https://pythia.org/), [Delphes](https://github.com/delphes/delphes), and [MadAnalysis5](https://github.com/MadAnalysis/madanalysis5) 
+> [!NOTE]
+> The NLO event generation, negative-weight handling, and effective-sample-size statistical treatment described in this README are local extensions on top of the above architecture and are not covered by the original publication.
+
+Please also cite the HEP tools used in your analysis, including [FeynRules](https://arxiv.org/abs/1310.1921), [MadGraph5_aMC@NLO](https://github.com/restrepo/madgraph), [Pythia8](https://pythia.org/), [Delphes](https://github.com/delphes/delphes), and [MadAnalysis5](https://github.com/MadAnalysis/madanalysis5).
 
 ## Acknowledgments
 

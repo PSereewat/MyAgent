@@ -1,16 +1,15 @@
-# mg5_ttbar_13TeV_nlo.mg5
-# NLO QCD ttbar production at 13 TeV, pp -> t t~ [QCD]
-# Executed remotely via Magnus blueprints (madgraph-compile + madgraph-launch);
-# this file records the equivalent standalone MG5 command sequence for
-# reproducibility.
+\# MadGraph5_aMC@NLO script: pp > ttbar @ 13 TeV, NLO QCD
+\# Fixed-order, parton level (top quarks stable, no shower, no Delphes)
+\# Model: loop_sm (pipeline built-in NLO-capable SM)
+\# Executed via Magnus blueprints madgraph-compile + madgraph-launch;
+\# this .mg5 file documents the equivalent local-fallback command sequence.
 
 import model loop_sm
 generate p p > t t~ [QCD]
-output events/pp_ttbar_13TeV_nlo
-
-launch events/pp_ttbar_13TeV_nlo
+output events/nlo/pp_ttbar_13TeV_nlo
+launch events/nlo/pp_ttbar_13TeV_nlo
 done
-set nevents 100
+set nevents 100000
 set ebeam1 6500
 set ebeam2 6500
 set pdlabel lhapdf
@@ -20,5 +19,8 @@ set fixed_ren_scale False
 set fixed_fac_scale False
 set req_acc_FO -1
 set param_card MASS 6 172.5
-set param_card DECAY 6 Auto
+set reweight_scale True
+set rw_rscale 1.0, 2.0, 0.5
+set rw_fscale 1.0, 2.0, 0.5
+set store_rwgt_info True
 done

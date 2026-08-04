@@ -1,0 +1,36 @@
+{
+  "nlo_validation": {
+    "files_found": [
+      "run2_NLO/pp_ttbar_nlo/Events/run_01/alllogs_0.html",
+      "run2_NLO/pp_ttbar_nlo/Events/run_01/alllogs_1.html",
+      "run2_NLO/pp_ttbar_nlo/Events/run_01/alllogs_2.html"
+    ],
+    "all_present": true,
+    "per_string": {
+      "MadLoop": true,
+      "Virtual": true,
+      "COLLIER": true
+    }
+  },
+  "nlops_log_validation": {
+    "progress_quote": {
+      "files_found": [
+        "run3_NLOPS/progress/step3_madgraph_nlo.md"
+      ],
+      "all_present": true,
+      "per_string": {
+        "Preparing MCatNLO run": true,
+        "Compiling MCatNLO for PYTHIA8": true,
+        "Showering events": true
+      }
+    },
+    "source_templates": {
+      "Preparing MCatNLO run": true,
+      "Compiling MCatNLO for PYTHIA8": true,
+      "Showering events": true
+    },
+    "all_present": true
+  },
+  "nlops_negative_weight_fraction": 0.2292,
+  "nlops_hepmc_exists": true
+}

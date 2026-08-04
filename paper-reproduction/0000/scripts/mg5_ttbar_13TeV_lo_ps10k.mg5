@@ -1,0 +1,31 @@
+# mg5_ttbar_13TeV_lo_ps10k.mg5
+# Pythia8-showered LO QCD ttbar production at 13 TeV, pp -> t t~ (no [QCD] tag).
+# Incremental companion run to mg5_ttbar_13TeV_lo.mg5: reuses the SAME compiled
+# process directory (events/lo/pp_ttbar_13TeV_lo, model sm, process p p > t t~ —
+# NOT recompiled here), adds shower=Pythia8, and reduces statistics to 10,000
+# events per the user's explicit request for this showered sample.
+# Top quarks are still left STABLE/undecayed at the hard-process level (no decay
+# chain syntax, no MadSpin) -- they pass into Pythia8 as stable colored PDG 6/-6
+# particles dressed with QCD radiation from the shower.
+# Executed remotely via Magnus blueprints (madgraph-launch only, reusing the
+# existing compiled process); this file records the equivalent standalone MG5
+# command sequence for reproducibility.
+
+# (compile step reused from events/lo/pp_ttbar_13TeV_lo -- see mg5_ttbar_13TeV_lo.mg5)
+
+launch events/lo/pp_ttbar_13TeV_lo_ps10k
+shower=Pythia8
+done
+set nevents 10000
+set ebeam1 6500
+set ebeam2 6500
+set param_card MASS 6 172.5
+set pdlabel lhapdf
+set lhaid 247000
+set dynamical_scale_choice 3
+set fixed_ren_scale False
+set fixed_fac_scale False
+set use_syst True
+set systematics_program systematics
+set systematics_arguments ['--mur=0.5,1,2', '--muf=0.5,1,2']
+done
