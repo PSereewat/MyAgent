@@ -17,7 +17,7 @@
 
 [中文](README_zh.md)
 
-<img src="images/architecture.svg" alt="Architecture" width="900" />
+<img src="images/myarchitecture.png" alt="Architecture" width="900" />
 
 </div>
 
